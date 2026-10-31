@@ -1,0 +1,32 @@
+# 本地执行过程与证据
+/.runtime/
+
+# 本机环境、凭据与会话
+.env
+.env.*
+!.env.example
+/.venv/
+/venv/
+*.pem
+*.key
+*.p12
+*.pfx
+/.auth/
+/playwright/.auth/
+
+# 缓存与测试输出（正式执行仍应定向到 .runtime/）
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+node_modules/
+test-results/
+playwright-report/
+
+# macOS 与编辑器个人状态
+.DS_Store
+.idea/
+.vscode/
