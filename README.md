@@ -20,18 +20,45 @@
 ## 首次使用
 
 1. 阅读 AGENTS.md 和 docs/project.md，补齐本次任务需要的正式需求、环境与权限。
-2. 检索任务和已有测试资产。已有目标可复用原任务；新任务复制 [tasks/_template.md](tasks/_template.md)，分配未使用的 TASK_ID。
-3. 选用项目技能；任务设计与测试执行分开进行。当前 [TASK-001](tasks/TASK-001.md) 是对话回归任务，关联用例尚待正式规则补齐，不能直接当作已验证用例执行。
+2. 检索任务和已有测试资产。已有目标复用原任务；没有合适任务时直接记录本地请求并创建 Run，无需先创建任务文件或分配 TASK_ID。
+3. 选用项目技能；任务设计与测试执行分开进行。当前 [TASK-001](tasks/TASK-001-基础对话回归.md) 是对话回归任务，关联用例尚待正式规则补齐，不能直接当作已验证用例执行。
 4. 明确执行范围后，让 Agent 新建唯一 Run，填入三个运行模板并记录真实动作。
 5. 核对 result.md；有可复用成果时，经工程师确认后更新长期资产，通过 Git 人工评审。
 
+## 任务进入 Git 的规则
+
+- `tasks/` 保存可重复使用的任务定义，继续进入 Git；日常请求默认只记录到 `.runtime/`，执行本身不要求产生 Git 变更。
+- 任务目标明确、步骤稳定、能够跨日期或由其他成员复用时，Agent 可提出沉淀建议；经确认后再复制 [任务模板](tasks/_template.md)，分配未使用的 TASK_ID。用户明确要求沉淀时可直接实施。
+- 长期任务写通用目标、范围、前置条件、步骤、验收标准和资产引用；具体日期、授权核实、筛选条件、进度和结果写入各自 Run。同类每日分析复用一个任务定义。
+- 日志、截图、生产原始数据和本次报告保持在 Runtime；团队需保留的关键证据另行归档至受控位置。Git 提交和推送仍由用户决定。
+
 可向 Agent 发送：
 
-> 请依据 AGENTS.md 执行 tasks/TASK-001.md。先检索相关资料和资产，核实前置条件；创建独立 Run 并记录计划、实际动作、结果及证据。缺失依据的场景标记阻塞，不启动浏览器。可沉淀的成果先提出建议。
+> 请依据 AGENTS.md 执行 tasks/TASK-001-基础对话回归.md。先检索相关资料和资产，核实前置条件；创建独立 Run 并记录计划、实际动作、结果及证据。缺失依据的场景标记阻塞，不启动浏览器。可沉淀的成果先提出建议。
 
 ## 手工创建运行目录
 
-在仓库根目录使用 macOS 的 `python3`，无需安装依赖。示例只创建本地目录和模板，不连接环境、不执行业务测试。运行前将 `task_id` 改为已存在的任务编号。
+收到任务后，Agent 会先总结中文概要，再创建目录。例如：
+
+```text
+# 没有长期任务定义的单次请求
+.runtime/requests/生产环境昨日异常对话分析/
+└── 20261103T010000Z-无回复场景排查-a1b2c3/
+
+# 复用已有长期任务
+.runtime/tasks/TASK-001-基础对话回归/
+└── 20261102T140000Z-多轮追问上下文验证-a1b2c3/
+    ├── plan.md
+    ├── execution.md
+    ├── result.md
+    ├── logs/
+    ├── screenshots/
+    └── artifacts/
+```
+
+两类 Run 均保存上述三个记录文件和三个子目录。任务概要说明长期目标，本次概要说明这一轮的具体范围；两者一致时可使用相同概要。命名、历史目录兼容和敏感信息边界以 [AGENTS.md](AGENTS.md#任务与执行) 为准。长期任务文件使用“编号＋中文概要”，例如 `tasks/TASK-004-生产环境指定周期对话质量分析.md`；TASK_ID 仍为 `TASK-004`，不包含概要。单次请求不分配任务编号，模板的 Task ID 填“无（单次请求）”。
+
+在仓库根目录使用 macOS 的 `python3`，无需安装依赖。示例只创建本地目录和模板，不连接环境、不执行业务测试。默认 `task_id = None` 表示单次请求；复用长期任务时改为已存在的任务编号，并填写 Agent 根据任务内容总结的中文概要。
 
 ```bash
 python3 - <<'PY'
@@ -40,16 +67,32 @@ from pathlib import Path
 import re
 import secrets
 
-task_id = "TASK-001"
-assert re.fullmatch(r"TASK-[0-9]{3,}", task_id), "任务编号格式错误"
-assert Path(f"tasks/{task_id}.md").is_file(), "任务定义不存在"
-run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ-") + secrets.token_hex(3)
-run = Path(".runtime/tasks") / task_id / run_id
+task_id = None  # 单次请求不分配编号；复用长期任务时填写如 "TASK-001"
+task_summary = "生产环境昨日异常对话分析"
+run_summary = "无回复场景排查"
+for summary in (task_summary, run_summary):
+    assert re.fullmatch(r"[\u4e00-\u9fffA-Za-z0-9-]{1,40}", summary), "概要应为中文短语，可含字母、数字和连字符，最多 40 字符"
+    assert re.search(r"[\u4e00-\u9fff]", summary), "概要须包含中文"
+if task_id is None:
+    task_dir = Path(".runtime/requests") / task_summary
+else:
+    assert re.fullmatch(r"TASK-[0-9]{3,}", task_id), "任务编号格式错误"
+    definitions = [path for path in Path("tasks").glob(f"{task_id}-*.md") if path.is_file()]
+    assert len(definitions) == 1, "任务定义不存在或同一编号对应多个文件，请先核对"
+    task_root = Path(".runtime/tasks")
+    existing = sorted(
+        path for path in task_root.glob(f"{task_id}*")
+        if path.is_dir() and (path.name == task_id or path.name.startswith(task_id + "-"))
+    )
+    assert len(existing) <= 1, "同一任务编号存在多个目录，请先核对，避免拆分历史记录"
+    task_dir = existing[0] if existing else task_root / f"{task_id}-{task_summary}"
+run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ-") + run_summary + "-" + secrets.token_hex(3)
+run = task_dir / run_id
 run.mkdir(parents=True, exist_ok=False)
 templates = Path(".agents/skills/kb-test-execution/assets")
 for name in ("plan.md", "execution.md", "result.md"):
     content = (templates / name).read_text(encoding="utf-8")
-    content = content.replace("{{TASK_ID}}", task_id).replace("{{RUN_ID}}", run_id)
+    content = content.replace("{{TASK_ID}}", task_id or "无（单次请求）").replace("{{RUN_ID}}", run_id)
     (run / name).write_text(content, encoding="utf-8")
 for name in ("logs", "screenshots", "artifacts"):
     (run / name).mkdir()

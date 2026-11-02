@@ -36,7 +36,7 @@ qa-payment/                         # 一个项目，一个独立 Git 仓库
 │
 ├── tasks/                          # 可复用的任务定义（Git）
 │   ├── _template.md
-│   └── TASK-001.md
+│   └── TASK-001-退款接口回归测试.md
 │
 └── .runtime/                       # 本地执行空间（整体忽略，不提交 Git）
     ├── tasks/
@@ -68,7 +68,7 @@ qa-payment/                         # 一个项目，一个独立 Git 仓库
 
 注意区分：
 
-- `tasks/TASK-001.md` 是可以多人、跨时间重复使用的**任务定义**，不保存每次运行产生的大量变化内容。
+- `tasks/TASK-001-退款接口回归测试.md` 是可以多人、跨时间重复使用的**任务定义**，不保存每次运行产生的大量变化内容。
 - `.runtime/tasks/TASK-001/<RUN_ID>/` 是**某一次执行实例**，每次执行新建目录，不能覆盖历史运行。
 - `docs/knowledge.md` 是**经确认的长期经验**，而 `result.md` 是**一次运行的原始结论**，并非所有运行结论都应升级为知识。
 - 第一阶段**不设**独立 `context/`、`knowledge/`、`playbooks/`、`runs/` 顶层目录，减少使用和维护成本。
@@ -103,7 +103,7 @@ qa-payment/                         # 一个项目，一个独立 Git 仓库
 7. 不得在未检索已有资产时直接重复创建用例或脚本。
 
 ## 3. 任务定义规则
-- 正式、可复用的任务保存在 tasks/TASK-xxx.md。
+- 正式、可复用的任务保存在 tasks/TASK-xxx-中文任务概要.md。
 - 任务文件保存目标、范围、前置条件、步骤、验收标准和资产引用。
 - 一次执行的实际计划、日志、结果不得写进 tasks/。
 - 如任务发生长期范围变化，更新任务定义并通过 Git 审核。
@@ -248,7 +248,7 @@ description: 对接口进行测试设计、执行、结果分析时使用；优�
 1. docs/project.md 中相关接口和业务规则
 2. docs/knowledge.md 中相关风险及已知问题
 3. tests/cases/、tests/scripts/ 中已有资产
-4. 当前 tasks/TASK-xxx.md
+4. 当前 tasks/TASK-xxx-中文任务概要.md
 
 ## 执行步骤
 1. 明确本次接口、测试环境和范围。
@@ -364,7 +364,7 @@ description: 对接口进行测试设计、执行、结果分析时使用；优�
 - <执行授权、数据清理、特殊断言等>
 ```
 
-### 任务实例：`tasks/TASK-001.md`
+### 任务实例：`tasks/TASK-001-退款接口回归测试.md`
 
 ```markdown
 # TASK-001：退款接口回归测试
@@ -562,7 +562,7 @@ description: 对接口进行测试设计、执行、结果分析时使用；优�
 
 - 已有任务且目标相同：复用原 Task，每次创建新 Run。
 - 目标基本相同但部分步骤不同：优先修改本次 Run 的 `plan.md`；长期通用变化再更新 Task。
-- 新的可复用任务：复制 `_template.md`，创建新的 `TASK-xxx.md`。
+- 新的可复用任务：复制 `_template.md`，创建新的 `TASK-xxx-中文任务概要.md`。
 - 仅一次性的临时探索：可先在 `.runtime/scratch/` 完成，认为具有交接或复用价值后再整理成正式 Task。
 
 任务编号在**当前项目内唯一**，归档后也不重新分配给别的任务。
@@ -732,14 +732,14 @@ script: improve refund response assertion
 2. 阅读 `README.md` 和 `AGENTS.md`，了解工作区规则。
 3. 确认当前 Agent 工具能读取仓库约定的规则及 Skill；不支持时配置对应的工具入口。
 4. 阅读 `docs/project.md`，按需查阅 `docs/knowledge.md`。
-5. 选取一个已经存在的 `tasks/TASK-xxx.md` 做试运行。
+5. 选取一个已经存在的 `tasks/TASK-xxx-中文任务概要.md` 做试运行。
 6. 检查 `.runtime/` 的执行结果，确认它不会被 Git 提交。
 
 ## 7.2 日常开展任务
 
 **工程师可向 Agent 提出的示例指令**：
 
-> 请依据 `AGENTS.md` 执行 `tasks/TASK-001.md`。先检索相关项目知识、Skills 和已有测试用例；本次所有过程数据请存入新建的 `.runtime/tasks/TASK-001/<RUN_ID>/`；输出 `plan.md`、`execution.md`、`result.md`。不要将运行文件提交 Git。若发现可复用成果，请列出建议并等待人工确认后再修改长期资产。
+> 请依据 `AGENTS.md` 执行 `tasks/TASK-001-退款接口回归测试.md`。先检索相关项目知识、Skills 和已有测试用例；本次所有过程数据请存入新建的 `.runtime/tasks/TASK-001/<RUN_ID>/`；输出 `plan.md`、`execution.md`、`result.md`。不要将运行文件提交 Git。若发现可复用成果，请列出建议并等待人工确认后再修改长期资产。
 
 **运行结束人工检查**：
 
@@ -777,7 +777,7 @@ script: improve refund response assertion
 
 ## 阶段二：跑通“任务 → 执行 → 结果”
 
-- [ ] 创建 `TASK-001.md`，由 Agent 执行。
+- [ ] 创建 `TASK-001-退款接口回归测试.md`，由 Agent 执行。
 - [ ] Agent 自动创建唯一 Run 目录。
 - [ ] 输出 `plan.md`、`execution.md`、`result.md`。
 - [ ] 另一名成员按照相同 Task 再执行一次，创建第二个 Run。
@@ -813,7 +813,7 @@ MVP 阶段两者合并在 `docs/` 下，分别用 `project.md` 和 `knowledge.md
 
 ### Q2：为什么不单独设置 `playbooks/`？
 
-当前由 `tasks/TASK-xxx.md` 的“推荐步骤”承担可复用流程作用。将来当多个任务共享一套复杂步骤时，再提炼为独立 Playbook，避免初期概念过多。
+当前由 `tasks/TASK-xxx-中文任务概要.md` 的“推荐步骤”承担可复用流程作用。将来当多个任务共享一套复杂步骤时，再提炼为独立 Playbook，避免初期概念过多。
 
 ### Q3：为什么不把 `runs/` 放在 Git 管理范围？
 
@@ -842,7 +842,7 @@ MVP 阶段两者合并在 `docs/` 下，分别用 `project.md` 和 `knowledge.md
 | Agent 能力 | `.agents/skills/` | 明确可复用技能资产 |
 | 项目资料 | `docs/project.md` + `docs/knowledge.md` | 先合并管理，避免目录过多 |
 | 测试资产 | `tests/cases/` + `scripts/` + `data/` | 长期可复用的测试成果 |
-| 任务复用 | `tasks/TASK-xxx.md` | 一任务一文件，易于查找与维护 |
+| 任务复用 | `tasks/TASK-xxx-中文任务概要.md` | 一任务一文件，易于查找与维护 |
 | 执行过程 | `.runtime/tasks/<TASK_ID>/<RUN_ID>/` | 统一结构，一次运行一目录 |
 | Git 边界 | 跟踪长期资产，忽略 `.runtime/` | 控制仓库体积和噪声 |
 | 流程治理 | 人工确认与 Git Review | 初期成本低，不依赖 CI |
