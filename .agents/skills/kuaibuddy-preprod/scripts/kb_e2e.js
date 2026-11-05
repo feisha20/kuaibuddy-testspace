@@ -84,8 +84,7 @@ function parseArgs(argv) {
 /* ------------------------------------------------------------ 配置与凭据 */
 
 /**
- * 读取 .env，按「注释块」切分。工作区的 .env 里禅道账号与预生产账号共用 password，
- * 所以优先取同时含 companyid + url 的那一块（kuaibuddy 预生产环境）。
+ * 读取指定的预生产配置文件，按注释块与平面键值解析。
  */
 function parseEnvFile(file) {
   let raw;
@@ -327,7 +326,8 @@ async function chat(cfg, token, { prompt, threadId, runId, skill, agentId, title
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutSec * 1000);
-  const startedAt = Date.now();
+  const startedAtMs = Date.now();
+  const startedAt = new Date(startedAtMs).toISOString();
 
   let answer = '';
   let reasoning = '';
@@ -398,7 +398,9 @@ async function chat(cfg, token, { prompt, threadId, runId, skill, agentId, title
     finished,
     error,
     request: payload,
-    elapsedMs: Date.now() - startedAt,
+    startedAt,
+    finishedAt: new Date().toISOString(),
+    elapsedMs: Date.now() - startedAtMs,
   };
 }
 
@@ -485,6 +487,8 @@ async function cmdAsk(cfg, flags, positional) {
     answer: result.answer,
     error: result.error,
     failures,
+    startedAt: result.startedAt,
+    finishedAt: result.finishedAt,
     elapsedMs: result.elapsedMs,
   };
   if (flags.out) out.artifacts = saveArtifacts(flags.out, result, { ok, failures });
@@ -628,9 +632,19 @@ function formatMessageContent(content) {
   }
 }
 
+// 单个辅助接口的业务失败只表示该接口失败，不推断对话接口不可用。
+function requireApiSuccess(res, label) {
+  if (!res || res.code !== 8) {
+    const code = res && res.code != null ? String(res.code) : '无';
+    throw new Error(`${label}失败：业务码 ${code}`);
+  }
+  return res;
+}
+
 async function cmdAgents(cfg, flags) {
   const token = await login(cfg);
   const res = await apiPostJson(cfg, token, '/web/agent/api/v1/agent/user/list', {});
+  requireApiSuccess(res, '查询 Agent 列表');
   if (flags.json) { console.log(JSON.stringify(res, null, 2)); return res; }
   console.log(JSON.stringify(res.data || [], null, 2));
   return res;
@@ -639,6 +653,7 @@ async function cmdAgents(cfg, flags) {
 async function cmdSkills(cfg, flags) {
   const token = await login(cfg);
   const res = await apiPostJson(cfg, token, '/web/agent/api/v1/skill/user/list', {});
+  requireApiSuccess(res, '查询 Skill 列表');
   if (flags.json) { console.log(JSON.stringify(res, null, 2)); return res; }
   console.log(JSON.stringify(res.data || [], null, 2));
   return res;
@@ -687,6 +702,10 @@ async function main() {
   }
 }
 
-main().catch((err) => {
-  die(err && err.stack ? err.stack : String(err));
-});
+if (require.main === module) {
+  main().catch((err) => {
+    die(err && err.message ? err.message : String(err));
+  });
+}
+
+module.exports = { chat, requireApiSuccess };
