@@ -35,7 +35,7 @@ TASK_FIELDS = {'name', 'executionID', 'type', 'assignedTo', 'estStarted', 'deadl
 TESTTASK_FIELDS = {'productID', 'name', 'build', 'execution', 'type', 'owner',
                    'status', 'begin', 'end', 'desc'}
 ACTIONS = {'case.create', 'case.review', 'bug.create', 'bug.update', 'bug.attach', 'task.create', 'task.start',
-           'testtask.create', 'testtask.linkcase', 'result.submit', 'result.report', 'task.update', 'case.update', 'task.finish'}
+           'testtask.create', 'testtask.linkcase', 'result.submit', 'result.report', 'task.update', 'case.update', 'task.finish', 'task.activate'}
 RESULTS = {'pass', 'fail', 'blocked'}
 
 
@@ -366,7 +366,7 @@ def validate_operation(op):
                 type(expected.get('storyId')) is int and expected['storyId'] >= 0 and
                 isinstance(expected.get('lastEditedDate'), str),
                 '用例评审需要targetId及expected.caseVersion/storyId/lastEditedDate，未修改用例的lastEditedDate可为空字符串。')
-    elif action in {'task.start', 'task.update', 'task.finish'}:
+    elif action in {'task.start', 'task.update', 'task.finish', 'task.activate'}:
         require(positive(op.get('targetId')) and type(expected.get('storyId')) is int and
                 expected['storyId'] >= 0 and isinstance(expected.get('lastEditedDate'), str),
                 '启动任务需要targetId及expected.storyId/lastEditedDate，未修改时lastEditedDate用空字符串。')
@@ -383,6 +383,7 @@ def validate_operation(op):
         'task.create': (TASK_FIELDS, {'name', 'executionID'}),
         'task.start': ({'left', 'consumed', 'assignedTo', 'realStarted', 'comment'}, {'left', 'consumed', 'assignedTo'}),
         'task.finish': ({'currentConsumed', 'consumed', 'assignedTo', 'realStarted', 'comment'}, {'currentConsumed', 'consumed', 'assignedTo', 'realStarted'}),
+        'task.activate': ({'left', 'assignedTo', 'consumed', 'comment'}, {'left', 'assignedTo', 'consumed'}),
         'testtask.create': (TESTTASK_FIELDS, {'productID', 'name', 'build', 'begin', 'end'}),
         'testtask.linkcase': ({'caseId', 'caseVersion', 'testtaskId'}, {'caseId', 'caseVersion', 'testtaskId'}),
         'result.report': ({'caseId', 'caseVersion', 'testtaskId', 'result', 'report'}, {'caseId', 'caseVersion', 'testtaskId', 'result', 'report'}),
@@ -456,6 +457,13 @@ def validate_operation(op):
     if action == 'task.create':
         require(data.get('type', 'test') == 'test', '本 Skill 仅创建 type=test 的测试工作任务。')
         require_login_account(data)
+    if action == 'task.activate':
+        import math
+        require_login_account(data)
+        require(isinstance(data['assignedTo'], str) and bool(data['assignedTo'].strip()), '需提供实际负责人。')
+        require(type(data['left']) in {int, float} and math.isfinite(data['left']) and data['left'] > 0, '预计剩余工时必须为正数。')
+        require(type(data['consumed']) in {int, float} and math.isfinite(data['consumed']) and data['consumed'] >= 0, '已消耗工时必须为非负数。')
+        require(isinstance(data.get('comment', ''), str), '备注必须为字符串。')
     if action == 'task.finish':
         import math
         require_login_account(data)
@@ -561,6 +569,14 @@ def preflight(client, op):
             require(len(runs) == 1, '测试单尚未关联该用例，请先关联。', 'CASE_NOT_LINKED')
         return {'runId': number_id(runs[0]['id']) if runs else 0, 'productId': number_id(case['product']),
                 'stepIds': [number_id(s['id']) for s in case.get('steps', [])]}
+    if action == 'task.activate':
+        task = client.detail('task', op['targetId'])
+        require(task.get('type') == 'test' and task.get('status') == 'done', '仅支持激活已完成测试任务。', 'CONFLICT')
+        require(str(task.get('story') or 0) == str(op['expected']['storyId']) and
+                (task.get('lastEditedDate') or '') == op['expected']['lastEditedDate'], '任务已变化。', 'CONFLICT')
+        require(task.get('assignedTo') == data['assignedTo'] and float(task.get('consumed', 0)) == data['consumed'],
+                '负责人或已消耗工时已变化。', 'CONFLICT')
+        return {}
     if action == 'task.finish':
         task = client.detail('task', op['targetId'])
         require(task.get('type') == 'test' and str(task.get('isParent', 0)) == '0' and task.get('status') == 'doing',
@@ -700,6 +716,12 @@ def submit(client, op):
                                           'from': 'testtask', 'testtaskID': data['testtaskId']})
         require(response.get('status') == 'success', '整体结果响应未明确成功，需要核查远端。', 'INVALID_RESPONSE')
         return {'id': data['caseId'], 'runId': context['runId'], 'note': note}
+    if action == 'task.activate':
+        preflight(client, op)
+        payload = {key: value for key, value in data.items() if key != 'consumed'}
+        response = client.request('PUT', f"/tasks/{op['targetId']}/activate", payload)
+        require(isinstance(response, dict) and response.get('status') == 'success', '激活响应未明确成功，需要核查。', 'INVALID_RESPONSE')
+        return {'id': op['targetId']}
     if action == 'task.finish':
         preflight(client, op)
         data['finishedDate'] = dt.datetime.now(dt.timezone(dt.timedelta(hours=8))).strftime('%Y-%m-%d %H:%M:%S')
@@ -771,6 +793,12 @@ def normalized_bug_steps(value):
 
 def verify(client, op, remote):
     action, data = op['action'], op['data']
+    if action == 'task.activate':
+        task = client.detail('task', op['targetId'])
+        require(task.get('status') in {'wait', 'doing'} and task.get('assignedTo') == data['assignedTo'] and
+                abs(float(task.get('consumed', -1)) - data['consumed']) < 0.00001,
+                '激活后状态、负责人或历史工时回读不一致。', 'VERIFY_FAILED')
+        return {'id': number_id(task['id']), 'status': task['status'], 'consumed': task['consumed'], 'left': task.get('left')}
     if action == 'task.finish':
         task = client.detail('task', op['targetId'])
         require(task.get('status') == 'done' and abs(float(task.get('consumed', -1)) -

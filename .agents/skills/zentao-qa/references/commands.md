@@ -120,6 +120,7 @@ python3 scripts/zentao_qa.py apply --file private/plan.json --commit
 | `task.create` | name、executionID | parent、type（仅test）、assignedTo、estStarted、deadline、pri、estimate、module、story、desc |
 | `task.start` | left、consumed、assignedTo | realStarted、comment |
 | `task.finish` | targetId、expected.storyId/lastEditedDate；data.currentConsumed、consumed、assignedTo、realStarted | comment |
+| `task.activate` | targetId、expected.storyId/lastEditedDate；data.left、assignedTo、consumed | comment |
 | `testtask.create` | productID、name、build、begin、end | execution、type、owner、status、desc |
 | `testtask.linkcase` | caseId、caseVersion、testtaskId | 无 |
 | `result.report` | caseId、caseVersion、testtaskId、result（fail/blocked）、report | 无 |
@@ -343,3 +344,7 @@ Bug重现步骤回读允许编辑器移除相邻块元素间的格式换行；�
 ```
 
 遵守防重账本；写入响应不确定时先回读核查，禁止重发或删除账本。
+
+### 激活已完成的测试任务
+
+`task.activate` 仅支持已完成的测试任务。先读取当前任务并核实负责人、已消耗工时、需求和修改时间；`left` 为用户确认的正数剩余工时，`consumed` 用于预检与回读，不发送到激活接口。激活后回读状态、负责人和已有工时；未明确成功或回读失败遵循防重账本，不重复发送。
