@@ -111,12 +111,15 @@ python3 scripts/zentao_qa.py apply --file private/plan.json --commit
 | action | 必填data字段 | 可选data字段 |
 |---|---|---|
 | `case.create` | productID、title、steps、expects | module、story、pri、type、precondition、stepType、project、execution |
+| `case.update` | targetId 和 expected.caseVersion/storyId/lastEditedDate | title、precondition、pri、type、steps、expects（步骤和预期须同时提供） |
+| `task.update` | targetId 和 expected.storyId/lastEditedDate | name、assignedTo、desc、pri、estimate、estStarted、deadline |
 | `case.review` | result（仅pass）、reviewedBy（单个账号组成的数组） | reviewedDate（YYYY-MM-DD）、comment |
 | `bug.create` | productID、title、openedBuild、steps | project、execution、severity、pri、type、story、assignedTo、bugLabel、responsible |
 | `bug.attach` | path、filename、sha256、size | 无 |
 | `bug.update` | 至少一个待修改字段 | title、severity、pri、type、openedBuild、steps、project、execution、story、assignedTo、bugLabel、responsible |
 | `task.create` | name、executionID | parent、type（仅test）、assignedTo、estStarted、deadline、pri、estimate、module、story、desc |
 | `task.start` | left、consumed、assignedTo | realStarted、comment |
+| `task.finish` | targetId、expected.storyId/lastEditedDate；data.currentConsumed、consumed、assignedTo、realStarted | comment |
 | `testtask.create` | productID、name、build、begin、end | execution、type、owner、status、desc |
 | `testtask.linkcase` | caseId、caseVersion、testtaskId | 无 |
 | `result.report` | caseId、caseVersion、testtaskId、result（fail/blocked）、report | 无 |
@@ -317,3 +320,26 @@ Bug重现步骤回读允许编辑器移除相邻块元素间的格式换行；�
 实机验证区分附件保存、正文引用保存与浏览器显示；未经用户要求不启动浏览器。
 
 正文图片故障排查：附件已显示不代表正文URL可显示图片。只读比较正文引用与附件元数据中的webPath；通过read bugimage核验PNG字节，再用最新lastEditedDate更新img.src。不得通过改扩展名、凭空拼data/upload路径、重新上传或把Token放入URL来解决。该命令不落盘图片，只返回字节大小、SHA256及URL。远端字节可读与浏览器渲染验收分别报告。
+
+### 编辑测试任务与用例
+
+以下操作沿用 `plan`、`apply --commit` 和现有防重账本，写入需明确授权。先读取目标最新详情，`case.update` 同时核对版本、需求和修改时间；`task.update` 核对需求和修改时间。未编辑时 `lastEditedDate` 使用空字符串。任务仅支持测试类型，指派必须为禅道登录账号；任务执行状态与工时由相应动作管理。
+
+```json
+{"schemaVersion":1,"operations":[
+  {"key":"task-12-rename-20261105","action":"task.update","targetId":12,"expected":{"storyId":0,"lastEditedDate":""},"data":{"name":"【单轮对话】预生产回归","assignedTo":"account"}},
+  {"key":"case-11-rename-20261105","action":"case.update","targetId":11,"expected":{"caseVersion":1,"storyId":0,"lastEditedDate":""},"data":{"title":"【单轮对话】发送消息"}}
+]}
+```
+
+用例编辑仅支持平铺步骤，需先读齐原字段和所有步骤；工具带回步骤、预期与 `stepType`，回读核对字段和步骤内容。修改步骤时一次提供 `steps` 和 `expects` 数组，可能影响版本与已有测试单的版本关联：编辑前先检查历史并与工程师确认，编辑后检查关联和历史，不自动重建测试单或执行结果。任务更新回读验证状态、已消耗和剩余工时未变；发生不一致停止并报告。`VERIFY_FAILED` 表示可能已写入，只对原计划回读，不能重复发送。此能力通过模拟测试，真实禅道 22.2 写入兼容性和对已有执行历史的影响仍需验证。
+
+### 完成测试工作任务
+
+先读取目标任务：仅进行中的叶子测试任务可完成。`data.consumed` 是读取到的已有累计消耗，`currentConsumed` 是用户确认的本次实际消耗；`assignedTo` 和 `realStarted` 原样取任务当前值。工具向禅道提交累计消耗，完成时间取实际操作时间，回读核对状态、总工时、剩余工时和父任务状态。禁止倒填或虚构执行时间；父任务可能由禅道自动联动完成。
+
+```json
+{"schemaVersion":1,"operations":[{"key":"task-12-finish-1h","action":"task.finish","targetId":12,"expected":{"storyId":0,"lastEditedDate":"2026-11-05 16:46:43"},"data":{"currentConsumed":1,"consumed":0,"assignedTo":"account","realStarted":"2026-11-05 16:46:43"}}]}
+```
+
+遵守防重账本；写入响应不确定时先回读核查，禁止重发或删除账本。

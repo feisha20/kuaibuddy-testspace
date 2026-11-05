@@ -35,7 +35,7 @@ TASK_FIELDS = {'name', 'executionID', 'type', 'assignedTo', 'estStarted', 'deadl
 TESTTASK_FIELDS = {'productID', 'name', 'build', 'execution', 'type', 'owner',
                    'status', 'begin', 'end', 'desc'}
 ACTIONS = {'case.create', 'case.review', 'bug.create', 'bug.update', 'bug.attach', 'task.create', 'task.start',
-           'testtask.create', 'testtask.linkcase', 'result.submit', 'result.report'}
+           'testtask.create', 'testtask.linkcase', 'result.submit', 'result.report', 'task.update', 'case.update', 'task.finish'}
 RESULTS = {'pass', 'fail', 'blocked'}
 
 
@@ -361,12 +361,12 @@ def validate_operation(op):
     elif action == 'bug.update':
         require(positive(op.get('targetId')) and isinstance(expected.get('lastEditedDate'), str),
                 '修改 Bug 需 targetId 和读取时的 expected.lastEditedDate；未编辑过时可为空字符串。')
-    elif action == 'case.review':
+    elif action in {'case.review', 'case.update'}:
         require(positive(op.get('targetId')) and positive(expected.get('caseVersion')) and
                 type(expected.get('storyId')) is int and expected['storyId'] >= 0 and
                 isinstance(expected.get('lastEditedDate'), str),
                 '用例评审需要targetId及expected.caseVersion/storyId/lastEditedDate，未修改用例的lastEditedDate可为空字符串。')
-    elif action == 'task.start':
+    elif action in {'task.start', 'task.update', 'task.finish'}:
         require(positive(op.get('targetId')) and type(expected.get('storyId')) is int and
                 expected['storyId'] >= 0 and isinstance(expected.get('lastEditedDate'), str),
                 '启动任务需要targetId及expected.storyId/lastEditedDate，未修改时lastEditedDate用空字符串。')
@@ -374,12 +374,15 @@ def validate_operation(op):
         require('targetId' not in op, '仅 bug.update、case.review 和 task.start 接受 targetId。')
     fields, required = {
         'case.create': (CASE_FIELDS, {'productID', 'title', 'steps', 'expects'}),
+        'case.update': ({'title', 'precondition', 'pri', 'type', 'steps', 'expects'}, set()),
+        'task.update': ({'name', 'assignedTo', 'desc', 'pri', 'estimate', 'estStarted', 'deadline'}, set()),
         'case.review': ({'result', 'reviewedBy', 'reviewedDate', 'comment'}, {'result', 'reviewedBy'}),
         'bug.create': (BUG_FIELDS, {'productID', 'title', 'openedBuild', 'steps'}),
         'bug.update': (BUG_FIELDS - {'productID'}, set()),
         'bug.attach': ({'path', 'filename', 'sha256', 'size'}, {'path', 'filename', 'sha256', 'size'}),
         'task.create': (TASK_FIELDS, {'name', 'executionID'}),
         'task.start': ({'left', 'consumed', 'assignedTo', 'realStarted', 'comment'}, {'left', 'consumed', 'assignedTo'}),
+        'task.finish': ({'currentConsumed', 'consumed', 'assignedTo', 'realStarted', 'comment'}, {'currentConsumed', 'consumed', 'assignedTo', 'realStarted'}),
         'testtask.create': (TESTTASK_FIELDS, {'productID', 'name', 'build', 'begin', 'end'}),
         'testtask.linkcase': ({'caseId', 'caseVersion', 'testtaskId'}, {'caseId', 'caseVersion', 'testtaskId'}),
         'result.report': ({'caseId', 'caseVersion', 'testtaskId', 'result', 'report'}, {'caseId', 'caseVersion', 'testtaskId', 'result', 'report'}),
@@ -426,7 +429,11 @@ def validate_operation(op):
                         'reviewedDate必须为YYYY-MM-DD日期。')
             except (TypeError, ValueError):
                 raise QAError('INVALID_INPUT', 'reviewedDate必须为YYYY-MM-DD日期。') from None
-    if action == 'case.create':
+    if action == 'case.update':
+        if 'type' in data:
+            require(data['type'] in {'unit', 'interface', 'feature', 'install', 'config', 'performance', 'security', 'other'}, '不支持的用例类型。')
+        require(('steps' in data) == ('expects' in data), '修改步骤须同时提供steps与expects。')
+    if action == 'case.create' or (action == 'case.update' and 'steps' in data):
         steps, expects = data['steps'], data['expects']
         require(isinstance(steps, list) and steps and isinstance(expects, list) and len(steps) == len(expects), '用例步骤与预期必须是长度一致的非空数组。')
         require(all(isinstance(x, str) and x.strip() for x in steps + expects), '步骤与预期不能为空。')
@@ -442,9 +449,24 @@ def validate_operation(op):
         if 'steps' in data:
             require(isinstance(data['steps'], str) and data['steps'].strip(), 'Bug 重现步骤不能为空。')
         require_login_account(data)
+    if action == 'task.update':
+        require_login_account(data)
+        if 'assignedTo' in data:
+            require(bool(data['assignedTo'].strip()), '负责人不能为空。')
     if action == 'task.create':
         require(data.get('type', 'test') == 'test', '本 Skill 仅创建 type=test 的测试工作任务。')
         require_login_account(data)
+    if action == 'task.finish':
+        import math
+        require_login_account(data)
+        for field in ('currentConsumed', 'consumed'):
+            require(type(data[field]) in {int, float} and math.isfinite(data[field]) and data[field] >= 0,
+                    '实际工时必须是有限非负数。')
+        require(bool(data['assignedTo'].strip()) and isinstance(data.get('comment', ''), str), '需提供实际负责人。')
+        try:
+            dt.datetime.strptime(data['realStarted'], '%Y-%m-%d %H:%M:%S')
+        except (TypeError, ValueError):
+            raise QAError('INVALID_INPUT', '实际开始时间必须是原任务的时间。') from None
     if action == 'task.start':
         import math
         require(type(data['left']) in {int, float} and math.isfinite(data['left']) and data['left'] >= 0.01,
@@ -509,6 +531,24 @@ def load_plan(path):
 
 def preflight(client, op):
     data, action = op['data'], op['action']
+    if action in {'task.update', 'case.update'}:
+        kind = action.split('.')[0]
+        current = client.detail(kind, op['targetId'])
+        require(str(current.get('story') or 0) == str(op['expected']['storyId']) and
+                (current.get('lastEditedDate') or '') == op['expected']['lastEditedDate'],
+                '对象关联需求或修改时间已变化，停止编辑。', 'CONFLICT')
+        require(str(current.get('deleted', 0)) in {'0', 'False', 'false'}, '对象已删除。', 'CONFLICT')
+        if kind == 'case':
+            require(str(current.get('version')) == str(op['expected']['caseVersion']), '用例版本已变化。', 'CONFLICT')
+            steps = current.get('steps')
+            require(isinstance(steps, list) and steps and all(x.get('type', 'step') == 'step' and
+                    isinstance(x.get('desc'), str) and isinstance(x.get('expect'), str) for x in steps),
+                    '仅支持完整读取的平铺用例步骤，停止编辑。', 'SCOPE_MISMATCH')
+            for field in ('title', 'precondition', 'pri', 'type', 'module', 'story'):
+                require(field in current and current[field] is not None, '用例原字段不完整，停止编辑。', 'INVALID_RESPONSE')
+        else:
+            require(current.get('type') == 'test', '仅支持编辑测试工作任务。', 'SCOPE_MISMATCH')
+        return {'before': current}
     if action == 'bug.attach':
         attachment_bytes(data)
         bug = client.detail('bug', op['targetId'])
@@ -521,6 +561,15 @@ def preflight(client, op):
             require(len(runs) == 1, '测试单尚未关联该用例，请先关联。', 'CASE_NOT_LINKED')
         return {'runId': number_id(runs[0]['id']) if runs else 0, 'productId': number_id(case['product']),
                 'stepIds': [number_id(s['id']) for s in case.get('steps', [])]}
+    if action == 'task.finish':
+        task = client.detail('task', op['targetId'])
+        require(task.get('type') == 'test' and str(task.get('isParent', 0)) == '0' and task.get('status') == 'doing',
+                '仅支持完成进行中的叶子测试任务。', 'CONFLICT')
+        require(str(task.get('story') or 0) == str(op['expected']['storyId']) and
+                (task.get('lastEditedDate') or '') == op['expected']['lastEditedDate'], '任务已变化。', 'CONFLICT')
+        require(task.get('assignedTo') == data['assignedTo'] and float(task.get('consumed', 0)) == data['consumed'] and
+                task.get('realStarted') == data['realStarted'], '负责人、已消耗工时或实际开始时间已变化。', 'CONFLICT')
+        return {}
     if action == 'task.start':
         task = client.detail('task', op['targetId'])
         require(task.get('type') == 'test' and str(task.get('isParent', 0)) == '0', '仅支持启动叶子测试任务。', 'SCOPE_MISMATCH')
@@ -599,6 +648,28 @@ def execution_context(client, op):
 
 def submit(client, op):
     action, data = op['action'], dict(op['data'])
+    if action in {'task.update', 'case.update'}:
+        current = preflight(client, op)['before']
+        if action == 'case.update':
+            payload = {field: current[field] for field in ('title', 'precondition', 'pri', 'type', 'module', 'story')}
+            payload.update({'steps': [x['desc'] for x in current['steps']],
+                            'expects': [x['expect'] for x in current['steps']],
+                            'stepType': ['step'] * len(current['steps'])})
+            payload.update(data)
+            for field in ('module', 'story', 'pri'):
+                payload[field] = int(payload[field])
+            path = f"/testcases/{op['targetId']}"
+        else:
+            payload = {field: current[field] for field in ('name', 'type', 'pri', 'estimate', 'module', 'story', 'desc') if current.get(field) is not None}
+            for field in ('pri', 'module', 'story'):
+                if field in payload: payload[field] = int(payload[field])
+            if 'estimate' in payload: payload['estimate'] = float(payload['estimate'])
+            payload.update(data)
+            path = f"/tasks/{op['targetId']}"
+        response = client.request('PUT', path, payload)
+        require(isinstance(response, dict) and response.get('status') == 'success',
+                '编辑响应未明确成功，需核查远端。', 'INVALID_RESPONSE')
+        return {'id': op['targetId'], 'before': current, 'sent': payload}
     if action == 'bug.attach':
         response = client.request('POST', '/files', image_multipart(data, op['targetId']))
         require(response.get('status') == 'success' and response.get('id') and isinstance(response.get('url'), str),
@@ -629,6 +700,13 @@ def submit(client, op):
                                           'from': 'testtask', 'testtaskID': data['testtaskId']})
         require(response.get('status') == 'success', '整体结果响应未明确成功，需要核查远端。', 'INVALID_RESPONSE')
         return {'id': data['caseId'], 'runId': context['runId'], 'note': note}
+    if action == 'task.finish':
+        preflight(client, op)
+        data['finishedDate'] = dt.datetime.now(dt.timezone(dt.timedelta(hours=8))).strftime('%Y-%m-%d %H:%M:%S')
+        data['consumed'] = data['consumed'] + data['currentConsumed']
+        response = client.request('PUT', f"/tasks/{op['targetId']}/finish", data)
+        require(isinstance(response, dict) and response.get('status') == 'success', '完成响应未明确成功，需要核查。', 'INVALID_RESPONSE')
+        return {'id': op['targetId'], 'finishedDate': data['finishedDate']}
     if action == 'task.start':
         data.setdefault('realStarted', dt.datetime.now(dt.timezone(dt.timedelta(hours=8))).strftime('%Y-%m-%d %H:%M:%S'))
         response = client.request('PUT', f"/tasks/{op['targetId']}/start", data)
@@ -693,6 +771,15 @@ def normalized_bug_steps(value):
 
 def verify(client, op, remote):
     action, data = op['action'], op['data']
+    if action == 'task.finish':
+        task = client.detail('task', op['targetId'])
+        require(task.get('status') == 'done' and abs(float(task.get('consumed', -1)) -
+                (data['consumed'] + data['currentConsumed'])) < 0.00001 and float(task.get('left', -1)) == 0,
+                '任务状态或工时回读不一致。', 'VERIFY_FAILED')
+        parent_id = number_id(task.get('parent') or 0)
+        parent = client.detail('task', parent_id) if parent_id else {}
+        return {'id': number_id(task['id']), 'status': task['status'], 'consumed': task['consumed'],
+                'finishedDate': task.get('finishedDate'), 'parentId': parent_id, 'parentStatus': parent.get('status')}
     if action == 'bug.attach':
         bug = client.detail('bug', op['targetId'])
         files = bug.get('files')
@@ -772,6 +859,28 @@ def verify(client, op, remote):
             require(all('【调试模拟，非真实产品测试结果】' in str(s.get('real', '')) for s in steps),
                     '回读缺少模拟调试标识。', 'VERIFY_FAILED')
         return {'id': number_id(matches[0]['id']), 'caseId': data['caseId'], 'runId': context['runId']}
+    if action in {'task.update', 'case.update'}:
+        kind = action.split('.')[0]
+        current = client.detail(kind, remote['id'])
+        before, sent = remote['before'], remote['sent']
+        for field in data:
+            if field in {'steps', 'expects'}:
+                continue
+            require(normalized_text(current.get(field)) == normalized_text(sent[field]),
+                    f'回读字段 {field} 不一致。', 'VERIFY_FAILED')
+        if kind == 'case':
+            steps = current.get('steps', [])
+            require([normalized_text(x.get('desc')) for x in steps] == [normalized_text(x) for x in sent['steps']] and
+                    [normalized_text(x.get('expect')) for x in steps] == [normalized_text(x) for x in sent['expects']] and
+                    all(x.get('type', 'step') == 'step' for x in steps), '用例步骤回读不一致。', 'VERIFY_FAILED')
+            for field in ('module', 'story', 'pri', 'type', 'precondition', 'title'):
+                require(normalized_text(current.get(field)) == normalized_text(sent[field]), f'用例字段 {field} 回读不一致。', 'VERIFY_FAILED')
+        else:
+            for field in ('execution', 'parent', 'story', 'type', 'status', 'consumed', 'left'):
+                require(normalized_text(current.get(field)) == normalized_text(before.get(field)),
+                        f'未请求修改的任务字段 {field} 已改变。', 'VERIFY_FAILED')
+        return {'id': number_id(current['id']), 'version': current.get('version'),
+                'lastEditedDate': current.get('lastEditedDate')}
     kind = action.split('.')[0]
     value = client.detail(kind, remote['id'])
     for field, wanted in data.items():
