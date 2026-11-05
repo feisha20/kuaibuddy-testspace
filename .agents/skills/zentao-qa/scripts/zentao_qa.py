@@ -672,6 +672,7 @@ def submit(client, op):
                             'expects': [x['expect'] for x in current['steps']],
                             'stepType': ['step'] * len(current['steps'])})
             payload.update(data)
+            payload['stepType'] = ['step'] * len(payload['steps'])
             for field in ('module', 'story', 'pri'):
                 payload[field] = int(payload[field])
             path = f"/testcases/{op['targetId']}"

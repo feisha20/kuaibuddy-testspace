@@ -36,6 +36,13 @@ class EditTests(unittest.TestCase):
         qa.validate_operation(op); qa.preflight(c, op); remote = qa.submit(c, op); qa.verify(c, op, remote)
         self.assertEqual(c.sent['steps'], ['操作']); self.assertEqual(c.sent['stepType'], ['step'])
         self.assertEqual(c.case['precondition'], '原前置'); self.assertEqual(c.case['title'], '新题')
+    def test_case_step_edit_resizes_types_and_keeps_all_steps(self):
+        c = Client(); op = {'key': 'edit-case-steps', 'action': 'case.update', 'targetId': 11,
+            'expected': {'caseVersion': 1, 'storyId': 0, 'lastEditedDate': ''},
+            'data': {'steps': ['打开入口', '填写信息', '提交并查看'], 'expects': ['入口可见', '内容正确', '显示结果']}}
+        qa.validate_operation(op); remote = qa.submit(c, op); qa.verify(c, op, remote)
+        self.assertEqual(c.sent['stepType'], ['step'] * 3)
+        self.assertEqual([step['desc'] for step in c.case['steps']], op['data']['steps'])
     def test_task_rename_assign_preserves_state(self):
         c = Client(); op = {'key': 'edit-task', 'action': 'task.update', 'targetId': 12,
             'expected': {'storyId': 0, 'lastEditedDate': ''}, 'data': {'name': '新任务', 'assignedTo': 'user'}}
