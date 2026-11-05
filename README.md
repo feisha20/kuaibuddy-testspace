@@ -10,6 +10,7 @@
 | [.agents/skills/](.agents/skills/) | 项目测试设计与执行方法 |
 | [docs/project.md](docs/project.md) | 项目事实、资料入口、环境与待补充信息 |
 | [docs/knowledge.md](docs/knowledge.md) | 有依据且已确认的测试经验 |
+| [docs/knowledge-workflow.md](docs/knowledge-workflow.md) | 探索知识的检索、候选、确认和复核流程 |
 | [tests/cases/](tests/cases/) | 可复用用例及模板 |
 | [tests/scripts/](tests/scripts/) | 经验证的自动化脚本 |
 | [tests/data/](tests/data/) | 非敏感样例与数据约定 |
@@ -24,6 +25,10 @@
 3. 选用项目技能；任务设计与测试执行分开进行。当前 [TASK-001](tasks/TASK-001-基础对话回归.md) 是对话回归任务，关联用例尚待正式规则补齐，不能直接当作已验证用例执行。
 4. 明确执行范围后，让 Agent 新建唯一 Run，填入三个运行模板并记录真实动作。
 5. 核对 result.md；有可复用成果时，经工程师确认后更新长期资产，通过 Git 人工评审。
+
+## 知识如何持续积累
+
+Agent 在相关任务开始前检索已有资料，探索结束后对照现有资产，自动整理有依据的知识候选，记录来源、适用条件、证据和冲突；工程师确认后更新共享知识或技能，并在后续使用时复核。具体流程和候选格式见 [知识积累流程](docs/knowledge-workflow.md)。这是 Agent 执行任务时遵循的工作流，不是后台自动扫描或自动提交；本机候选与原始证据不会随 Git 共享。
 
 ## 任务进入 Git 的规则
 
