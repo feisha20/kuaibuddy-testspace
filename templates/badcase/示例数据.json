@@ -1,0 +1,43 @@
+{
+  "title": "对话质量分析 · 示例报告",
+  "environment": "示例环境",
+  "period": "2026-11-01",
+  "timezone": "Asia/Shanghai",
+  "note": "虚构示例",
+  "cases": [
+    {
+      "id": "BC-01",
+      "title": "天气查询结果未交付",
+      "priority": "P1",
+      "type": "任务未完成",
+      "status": "待核实",
+      "prompt": "查询今天的天气，并将结果发送给我。",
+      "description": "查询到天气后推送受阻，助手未返回已获取的数据。",
+      "startTime": "2026-11-01 09:00:00",
+      "endTime": "2026-11-01 09:03:20",
+      "duration": "3 分 20 秒（可见消息跨度）",
+      "runId": "demo-run-001",
+      "sessionId": "demo-session-001",
+      "timeline": [
+        {
+          "time": "09:00:00",
+          "step": "收到客户请求。"
+        },
+        {
+          "time": "09:00:18",
+          "step": "查询天气。",
+          "tool": "运行命令 / weather-cli",
+          "command": "weather-cli forecast --city 示例城市",
+          "result": "返回天气数据。"
+        },
+        {
+          "time": "09:03:20",
+          "step": "推送受阻，未交付天气数据。"
+        }
+      ],
+      "cause": "已确认：推送工具返回授权不足。待验证：结果未交付的具体原因。",
+      "evidence": "工具结果；服务端 trace 未获取。",
+      "suggestion": "先返回已获得的结果，再说明推送受阻。"
+    }
+  ]
+}

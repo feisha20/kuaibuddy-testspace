@@ -102,7 +102,11 @@ PY
 
 Run ID 使用 UTC，记录展示时间须写明时区。初始化已建立 `.runtime/tasks/`、`scratch/`、`cache/`；其他成员 Clone 后按需重建，Git 不保存空目录。
 
-## 本机账号与禅道配置
+## 本机账号与环境配置
+
+KuaiBuddy 预生产环境入口见 [项目说明](docs/project.md)，个人公司 ID、账号和密码存放在本机 `.env.preprod`，不提交 Git。文件采用 `url`、`companyid`、`usrname`、`password` 字段。项目内 [kuaibuddy-preprod 技能](.agents/skills/kuaibuddy-preprod/SKILL.md)默认读取该文件，使用 Node.js 18 及以上；登录令牌保存在本机 `.runtime/cache/kuaibuddy-preprod/`。填写配置不代表已经验证登录或授权执行测试。
+
+### 禅道配置
 
 个人配置放仓库根目录 `.env`，变量名参照 [.env.example](.env.example)。新成员可复制该示例后在本机填写；已有 `.env` 不要覆盖。共享文档只保存变量名、用途和权限需求，不保存真实账号或凭据。
 
