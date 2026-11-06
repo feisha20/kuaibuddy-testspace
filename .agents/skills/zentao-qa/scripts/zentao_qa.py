@@ -35,7 +35,7 @@ TASK_FIELDS = {'name', 'executionID', 'type', 'assignedTo', 'estStarted', 'deadl
 TESTTASK_FIELDS = {'productID', 'name', 'build', 'execution', 'type', 'owner',
                    'status', 'begin', 'end', 'desc'}
 ACTIONS = {'case.create', 'case.review', 'bug.create', 'bug.update', 'bug.attach', 'task.create', 'task.start',
-           'testtask.create', 'testtask.linkcase', 'result.submit', 'result.report', 'task.update', 'case.update', 'task.finish', 'task.activate'}
+           'testtask.create', 'testtask.linkcase', 'testtask.unlinkcase', 'result.submit', 'result.report', 'task.update', 'case.update', 'task.finish', 'task.activate'}
 RESULTS = {'pass', 'fail', 'blocked'}
 
 
@@ -386,6 +386,7 @@ def validate_operation(op):
         'task.activate': ({'left', 'assignedTo', 'consumed', 'comment'}, {'left', 'assignedTo', 'consumed'}),
         'testtask.create': (TESTTASK_FIELDS, {'productID', 'name', 'build', 'begin', 'end'}),
         'testtask.linkcase': ({'caseId', 'caseVersion', 'testtaskId'}, {'caseId', 'caseVersion', 'testtaskId'}),
+        'testtask.unlinkcase': ({'caseId', 'testtaskId', 'runId', 'replacementCaseId'}, {'caseId', 'testtaskId', 'runId', 'replacementCaseId'}),
         'result.report': ({'caseId', 'caseVersion', 'testtaskId', 'result', 'report'}, {'caseId', 'caseVersion', 'testtaskId', 'result', 'report'}),
         'result.submit': ({'caseId', 'caseVersion', 'testtaskId', 'steps', 'result', 'evidence', 'startedAt', 'finishedAt', 'simulation'}, {'caseId', 'caseVersion', 'testtaskId', 'steps', 'result', 'evidence'})
     }[action]
@@ -396,7 +397,7 @@ def validate_operation(op):
                 isinstance(data['sha256'], str) and re.fullmatch(r'[0-9a-f]{64}', data['sha256']) and
                 positive(data['size']), '截图需绝对路径、安全文件名、SHA256及正整数size。')
         attachment_bytes(data)
-    for field in ('productID', 'executionID', 'caseId', 'caseVersion', 'testtaskId', 'build'):
+    for field in ('productID', 'executionID', 'caseId', 'caseVersion', 'testtaskId', 'build', 'runId', 'replacementCaseId'):
         if field in data:
             require(positive(data[field]), f'{field} 必须是正整数。')
     for field in ('story', 'module', 'project', 'execution', 'parent'):
@@ -563,6 +564,15 @@ def preflight(client, op):
         require(str(bug.get('story')) == str(op['expected']['storyId']) and
                 str(bug.get('deleted', 0)) in {'0', 'False'}, '目标Bug需求不匹配或已删除。', 'SCOPE_MISMATCH')
         return {}
+    if action == 'testtask.unlinkcase':
+        task = client.testtask(data['testtaskId'])
+        runs = [r for r in task['testcases'] if str(r.get('case')) == str(data['caseId'])]
+        replacements = [r for r in task['testcases'] if str(r.get('case')) == str(data['replacementCaseId'])]
+        require(len(runs) == 1 and str(runs[0].get('id')) == str(data['runId']),
+                '待移除执行条目不存在、重复或编号已变化。', 'CONFLICT')
+        require(len(replacements) == 1 and replacements[0].get('lastRunResult') == 'pass',
+                '替代用例不存在、重复或尚未通过。', 'CONFLICT')
+        return {'runId': data['runId']}
     if action in {'testtask.linkcase', 'result.report'}:
         case, task, runs = execution_context(client, op)
         if action == 'result.report':
@@ -696,6 +706,12 @@ def submit(client, op):
         require((origin.scheme, origin.netloc) == (target.scheme, target.netloc) and not target.fragment,
                 '上传返回的图片URL不属于当前站点，停止使用。', 'INVALID_RESPONSE')
         return {'id': number_id(response['id']), 'url': url, 'bugId': op['targetId']}
+    if action == 'testtask.unlinkcase':
+        preflight(client, op)
+        response = client.request('PUT', '/testtasks/unlinkCase', {}, params={'runID': data['runId']})
+        require(isinstance(response, dict) and response.get('status') == 'success',
+                '移除响应未明确成功，需核查远端。', 'INVALID_RESPONSE')
+        return {'id': data['testtaskId'], 'runId': data['runId']}
     if action == 'testtask.linkcase':
         context = preflight(client, op)
         if not context['runId']:
@@ -822,6 +838,14 @@ def verify(client, op, remote):
         require(image['sha256'] == data['sha256'] and image['size'] == data['size'],
                 '远端PNG字节与上传原图不一致。', 'VERIFY_FAILED')
         return dict(remote, uploadUrl=remote['url'], url=image['url'], sha256=image['sha256'], imageReadable=True)
+    if action == 'testtask.unlinkcase':
+        task = client.testtask(data['testtaskId'])
+        require(not any(str(r.get('case')) == str(data['caseId']) or str(r.get('id')) == str(data['runId']) for r in task['testcases']),
+                '回读仍存在目标关联。', 'VERIFY_FAILED')
+        replacements = [r for r in task['testcases'] if str(r.get('case')) == str(data['replacementCaseId'])]
+        require(len(replacements) == 1 and replacements[0].get('lastRunResult') == 'pass',
+                '替代用例的关联或通过结果异常。', 'VERIFY_FAILED')
+        return {'id': data['testtaskId'], 'removedCaseId': data['caseId'], 'runId': data['runId'], 'replacementCaseId': data['replacementCaseId']}
     if action == 'testtask.linkcase':
         context = preflight(client, op)
         require(context['runId'] > 0, '回读未找到关联条目，已提交操作不会自动重发。', 'VERIFY_FAILED')
