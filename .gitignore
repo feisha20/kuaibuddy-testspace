@@ -33,3 +33,6 @@ playwright-report/
 
 # 禅道技能默认本机配置与防重账本（正常使用应指定 .runtime/ 路径）
 /.agents/skills/zentao-qa/.local/
+
+# playwright 文件
+.playwright-mcp

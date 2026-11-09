@@ -1158,6 +1158,15 @@ def configured(args):
                         '登录期间本地配置已改变，未覆盖配置，请重新运行。', 'CONFIG_CONFLICT')
                 latest['token'] = client.token
                 safe_write(args.config, latest)
+            elif not config and env_password and args.config:
+                # 当通过环境变量提供凭据且本地配置尚不存在时，自动在本地保存 Token 供后续命令复用（不持久化环境变量中的密码）
+                cache_cfg = {
+                    'url': client.url,
+                    'account': account,
+                    'token': client.token,
+                    'noProxy': client.no_proxy
+                }
+                safe_write(args.config, cache_cfg)
         client.reauthenticate = reauthenticate
     return client, account
 

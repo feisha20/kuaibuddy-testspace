@@ -233,6 +233,29 @@ class ValidationTests(unittest.TestCase):
             self.assertNotIn('合成密码', json.dumps(config))
             self.assertNotIn('新Token', json.dumps(result))
 
+    def test_环境变量自动登录时缓存Token(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / 'config.json'
+            args = qa.parser().parse_args(['--config', str(path), '--url', 'https://demo.invalid', '--account', 'tester', 'doctor'])
+            with patch.dict(os.environ, {'ZENTAO_PASSWORD': '合成密码'}, clear=True):
+                client, account = qa.configured(args)
+                self.assertFalse(path.exists())
+                with patch.object(client, '_request_once', return_value={'status': 'success', 'token': '自动缓存Token', 'user': {'account': 'tester'}}):
+                    client.reauthenticate()
+            self.assertTrue(path.exists())
+            cached = qa.read_json(path)
+            self.assertEqual(cached['token'], '自动缓存Token')
+            self.assertEqual(cached['url'], 'https://demo.invalid')
+            self.assertEqual(cached['account'], 'tester')
+            self.assertNotIn('password', cached)
+            self.assertEqual(path.stat().st_mode & 0o777, 0o600)
+
+            # 第二次执行，直接复用已保存的 Token，且不重新登录
+            args2 = qa.parser().parse_args(['--config', str(path), '--url', 'https://demo.invalid', '--account', 'tester', 'doctor'])
+            client2, account2 = qa.configured(args2)
+            self.assertEqual(client2.token, '自动缓存Token')
+            self.assertEqual(account2, 'tester')
+
 
 class WorkflowTests(unittest.TestCase):
     def setUp(self):
