@@ -25,6 +25,7 @@ htmlcov/
 node_modules/
 test-results/
 playwright-report/
+latest_report
 
 # macOS 与编辑器个人状态
 .DS_Store

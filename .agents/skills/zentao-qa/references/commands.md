@@ -65,9 +65,26 @@ python3 scripts/zentao_qa.py read users --kw hjl --exact   # 账号/姓名/拼�
 
 ## 写入计划
 
+### 关闭Bug
+
+仅在用户授权关闭指定Bug时使用。先读取 `read bug --id BugID`，把当前关联需求（无需求填0）、状态和修改时间填入计划。仅接受 `active` 或 `resolved`；已关闭、已删除或发生并发修改时停止。`comment` 写实际关闭依据，不能凭关闭动作声称已修复或测试通过。关闭不自动解决Bug，不改原解决方案、优先级、严重程度或类型；关闭人和时间由服务端记录，指派人按官方动作变为 `closed`。
+
+```json
+{"schemaVersion":1,"operations":[{"key":"bug-40-close-1","action":"bug.close","targetId":40,"expected":{"storyId":10,"status":"resolved","lastEditedDate":"2026-11-12 10:00:00"},"data":{"comment":"按用户确认的关闭依据关闭。"}}]}
+```
+
+示例编号与时间必须替换为刚读取的真实值，说明须改为本次真实依据。计划保存在当前 Run（下例为 `当前Run/artifacts/close.json`），在仓库根目录使用：
+
+```bash
+python3 .agents/skills/zentao-qa/scripts/zentao_qa.py plan --file 当前Run/artifacts/close.json
+python3 .agents/skills/zentao-qa/scripts/zentao_qa.py --config .runtime/cache/zentao/config.json apply --file 当前Run/artifacts/close.json --commit
+```
+
+运行前按README加载本机环境变量；配置、账本路径固定复用。成功后回读 `status=closed`、`assignedTo=closed`、关闭人和有效关闭时间，并核对原需求与解决字段等未变化。同key重试不会再次关闭；`VERIFY_FAILED`只重做回读，`UNCERTAIN_WRITE`停止并人工核查详情与关闭历史，不能换key、删除账本或自动重发。修改时间检查不是服务端原子条件更新，不能完全排除并发窗口。公司实例的关闭权限、工作流及通知行为仍需获授权后实机验证。
+
 计划为JSON对象，顶层只含 `schemaVersion: 1` 和 `operations`，每批1至100项。
 
-操作通用字段：`key`、`action`、`data`；可选 `expected`；`bug.update`、`case.review`、`task.start` 接受 `targetId`。`case.create` 可选 `autoReview`（布尔值，默认true）。
+操作通用字段：`key`、`action`、`data`；可选 `expected`；编辑、评审、关闭和任务状态动作等的 `targetId` 要求见下表。`case.create` 可选 `autoReview`（布尔值，默认true）。
 
 ```json
 {
@@ -117,6 +134,7 @@ python3 scripts/zentao_qa.py apply --file private/plan.json --commit
 | `bug.create` | productID、title、openedBuild、steps | project、execution、severity、pri、type、story、assignedTo、bugLabel、responsible |
 | `bug.attach` | path、filename、sha256、size | 无 |
 | `bug.update` | 至少一个待修改字段 | title、severity、pri、type、openedBuild、steps、project、execution、story、assignedTo、bugLabel、responsible |
+| `bug.close` | targetId、expected.storyId/status/lastEditedDate；data.comment（非空关闭依据） | 无 |
 | `task.create` | name、executionID | parent、type（仅test）、assignedTo、estStarted、deadline、pri、estimate、module、story、desc |
 | `task.start` | left、consumed、assignedTo | realStarted、comment |
 | `task.finish` | targetId、expected.storyId/lastEditedDate；data.currentConsumed、consumed、assignedTo、realStarted | comment |

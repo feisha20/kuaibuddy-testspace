@@ -16,6 +16,10 @@
 
 ## 能力与验证层次
 
+2026-11-12后续实机验证：用户明确授权后，在当前公司实例将一条active状态Bug通过 `bug.close` 正式关闭。响应为success，工具回读及再次独立详情回读均确认status=closed、assignedTo=closed、当前账号closedBy及有效closedDate；原需求、解决字段、优先级、严重程度和类型未变化。该证据补充下述初次开发时“尚未实机验证”的状态，仅证明本次账号和对象的关闭路径；未验证其他权限、resolved状态、通知送达或产品修复。关闭说明明确未执行产品回归。
+
+2026-11-12新增 `bug.close`：依据官方22.2 [Bug控制器close](https://github.com/easysoft/zentaopms/blob/zentaopms_22.2_20260527/module/bug/control.php)、[关闭表单](https://github.com/easysoft/zentaopms/blob/zentaopms_22.2_20260527/module/bug/config/form.php)及[Bug模型close](https://github.com/easysoft/zentaopms/blob/zentaopms_22.2_20260527/module/bug/model.php)，经v2动态路由调用 `PUT /bugs/{id}/close`，仅发送comment。表单默认写入closed状态、confirmed=1、当前账号及关闭时间；模型记录Closed历史并将assignedTo设为closed。工具锁定原状态、需求和修改时间，回读关闭元数据并核对原解决字段等。验证状态：官方源码核实及本地合成测试通过，未对公司实例执行真实关闭，权限、定制工作流、通知与接口响应尚未实机验证。
+
 | 能力 | 适配接口 | 本轮真实验证 |
 |---|---|---|
 | 登录 | POST v2/users/login | 已成功，Token不输出 |

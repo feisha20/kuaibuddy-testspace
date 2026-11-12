@@ -34,7 +34,7 @@ TASK_FIELDS = {'name', 'executionID', 'type', 'assignedTo', 'estStarted', 'deadl
                'pri', 'estimate', 'module', 'story', 'desc', 'parent'}
 TESTTASK_FIELDS = {'productID', 'name', 'build', 'execution', 'type', 'owner',
                    'status', 'begin', 'end', 'desc'}
-ACTIONS = {'case.create', 'case.review', 'bug.create', 'bug.update', 'bug.attach', 'task.create', 'task.start',
+ACTIONS = {'case.create', 'case.review', 'bug.create', 'bug.update', 'bug.close', 'bug.attach', 'task.create', 'task.start',
            'testtask.create', 'testtask.linkcase', 'testtask.unlinkcase', 'result.submit', 'result.report', 'task.update', 'case.update', 'task.finish', 'task.activate'}
 RESULTS = {'pass', 'fail', 'blocked'}
 
@@ -349,7 +349,8 @@ def validate_operation(op):
     if 'autoReview' in op:
         require(action == 'case.create' and type(op['autoReview']) is bool, 'autoReview仅适用于case.create，且必须为布尔值。')
     expected = op.get('expected', {})
-    require(isinstance(expected, dict) and set(expected) <= {'storyVersion', 'lastEditedDate', 'caseVersion', 'storyId'}, 'expected 仅支持 storyVersion、lastEditedDate、caseVersion、storyId。')
+    require(isinstance(expected, dict) and set(expected) <= {'storyVersion', 'lastEditedDate', 'caseVersion', 'storyId', 'status'}, 'expected 仅支持 storyVersion、lastEditedDate、caseVersion、storyId、status（仅bug.close）。')
+    require('status' not in expected or action == 'bug.close', 'expected.status仅适用于bug.close。')
     if 'storyVersion' in expected:
         require(positive(expected['storyVersion']), 'storyVersion 必须为正整数。')
     if action in {'testtask.linkcase', 'result.report'}:
@@ -358,6 +359,11 @@ def validate_operation(op):
     if action == 'bug.attach':
         require(positive(op.get('targetId')) and type(expected.get('storyId')) is int and expected['storyId'] >= 0,
                 '截图上传需要Bug targetId与expected.storyId。')
+    elif action == 'bug.close':
+        require(positive(op.get('targetId')) and type(expected.get('storyId')) is int and
+                expected['storyId'] >= 0 and isinstance(expected.get('lastEditedDate'), str) and
+                expected.get('status') in {'active', 'resolved'},
+                '关闭Bug需要targetId及expected.storyId/lastEditedDate/status，状态须为active或resolved。')
     elif action == 'bug.update':
         require(positive(op.get('targetId')) and isinstance(expected.get('lastEditedDate'), str),
                 '修改 Bug 需 targetId 和读取时的 expected.lastEditedDate；未编辑过时可为空字符串。')
@@ -379,6 +385,7 @@ def validate_operation(op):
         'case.review': ({'result', 'reviewedBy', 'reviewedDate', 'comment'}, {'result', 'reviewedBy'}),
         'bug.create': (BUG_FIELDS, {'productID', 'title', 'openedBuild', 'steps'}),
         'bug.update': (BUG_FIELDS - {'productID'}, set()),
+        'bug.close': ({'comment'}, {'comment'}),
         'bug.attach': ({'path', 'filename', 'sha256', 'size'}, {'path', 'filename', 'sha256', 'size'}),
         'task.create': (TASK_FIELDS, {'name', 'executionID'}),
         'task.start': ({'left', 'consumed', 'assignedTo', 'realStarted', 'comment'}, {'left', 'consumed', 'assignedTo'}),
@@ -391,6 +398,8 @@ def validate_operation(op):
         'result.submit': ({'caseId', 'caseVersion', 'testtaskId', 'steps', 'result', 'evidence', 'startedAt', 'finishedAt', 'simulation'}, {'caseId', 'caseVersion', 'testtaskId', 'steps', 'result', 'evidence'})
     }[action]
     require(set(data) <= fields and required <= set(data), 'data 存在未知字段或缺少必填字段，请查 references/commands.md。')
+    if action == 'bug.close':
+        require(isinstance(data['comment'], str) and data['comment'].strip(), '关闭Bug需提供非空comment，说明实际关闭依据。')
     if action == 'bug.attach':
         require(isinstance(data['path'], str) and isinstance(data['filename'], str) and
                 re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.-]{0,119}', data['filename']) and
@@ -540,6 +549,17 @@ def load_plan(path):
 
 def preflight(client, op):
     data, action = op['data'], op['action']
+    if action == 'bug.close':
+        bug = client.detail('bug', op['targetId'])
+        expected = op['expected']
+        require(str(bug.get('id')) == str(op['targetId']) and
+                str(bug.get('deleted', 0)) in {'0', 'False', 'false'},
+                '目标Bug不存在、编号不匹配或已删除。', 'CONFLICT')
+        require(bug.get('status') == expected['status'] and
+                str(bug.get('story') or 0) == str(expected['storyId']) and
+                (bug.get('lastEditedDate') or '') == expected['lastEditedDate'],
+                'Bug状态、关联需求或修改时间已变化，停止关闭。', 'CONFLICT')
+        return {'before': bug}
     if action in {'task.update', 'case.update'}:
         kind = action.split('.')[0]
         current = client.detail(kind, op['targetId'])
@@ -697,6 +717,12 @@ def submit(client, op):
         require(isinstance(response, dict) and response.get('status') == 'success',
                 '编辑响应未明确成功，需核查远端。', 'INVALID_RESPONSE')
         return {'id': op['targetId'], 'before': current, 'sent': payload}
+    if action == 'bug.close':
+        context = preflight(client, op)
+        response = client.request('PUT', f"/bugs/{op['targetId']}/close", data)
+        require(isinstance(response, dict) and response.get('status') == 'success',
+                '关闭响应未明确成功，需要核查远端。', 'INVALID_RESPONSE')
+        return {'id': op['targetId'], 'before': context['before']}
     if action == 'bug.attach':
         response = client.request('POST', '/files', image_multipart(data, op['targetId']))
         require(response.get('status') == 'success' and response.get('id') and isinstance(response.get('url'), str),
@@ -810,6 +836,16 @@ def normalized_bug_steps(value):
 
 def verify(client, op, remote):
     action, data = op['action'], op['data']
+    if action == 'bug.close':
+        bug = client.detail('bug', op['targetId'])
+        require(str(bug.get('id')) == str(op['targetId']) and bug.get('status') == 'closed' and
+                bug.get('assignedTo') == 'closed' and bool(bug.get('closedBy')) and
+                bool(bug.get('closedDate')) and not str(bug['closedDate']).startswith('0000-'),
+                'Bug关闭状态、指派人、关闭人或关闭时间回读不一致。', 'VERIFY_FAILED')
+        for field in ('story', 'resolution', 'resolvedBy', 'resolvedDate', 'resolvedBuild', 'pri', 'severity', 'type'):
+            require(normalized_text(bug.get(field)) == normalized_text(remote['before'].get(field)),
+                    f'关闭后原字段 {field} 已改变。', 'VERIFY_FAILED')
+        return {field: bug.get(field) for field in ('id', 'status', 'assignedTo', 'closedBy', 'closedDate')}
     if action == 'task.activate':
         task = client.detail('task', op['targetId'])
         require(task.get('status') in {'wait', 'doing'} and task.get('assignedTo') == data['assignedTo'] and
