@@ -1,18 +1,22 @@
 ---
 name: kuaibuddy-preprod
-description: 在 KuaiBuddy 预生产环境登录、执行获授权的对话测试或回读会话时使用，使用项目本地配置和运行目录。
+description: 在 KuaiBuddy 指定环境（如测试环境 .env.test、预生产环境 .env.preprod 等）登录、执行获授权的对话测试或回读会话时使用，使用项目本地配置和运行目录。
 ---
 
-# KuaiBuddy 预生产登录与对话测试
+# KuaiBuddy 多环境登录与对话测试
 
-读取仓库 AGENTS.md、README.md 和相关任务资产。此技能只用于用户指定的预生产任务，不将配置自动用于其他环境；不依赖浏览器。
+读取仓库 AGENTS.md、README.md 和相关任务资产。此技能适配所有环境（测试、预生产等）：**必须按用户明确指定的环境选择对应配置文件**，未明确指定时不擅自猜测或跨环境复用；不依赖浏览器。
 
 ## 登录与凭据
 
-- 需要 Node.js 18 及以上，无第三方依赖。脚本 `scripts/kb_e2e.js` 默认只读取仓库根目录 `.env.preprod`；也可通过 `KB_ENV_FILE` 显式指定配置文件，或通过 `KB_URL`、`KB_COMPANY_ID`、`KB_USERNAME`、`KB_PASSWORD` 覆盖对应项。不得回退读取其他项目的配置。
-- `.env.preprod` 字段为 `url`、`companyid`、`usrname`、`password`。密码、令牌和账号不写入命令参数、日志、报告或共享文档；不要输出配置文件内容。
-- 入口：在仓库根目录执行 `node .agents/skills/kuaibuddy-preprod/scripts/kb_e2e.js login`。登录返回包含账号信息，记录执行结果时只保留脱敏后的成功或失败信息。登录会访问目标服务，仅在任务需要登录时执行。
-- 令牌缓存保存在 `.runtime/cache/kuaibuddy-preprod/token.json`，匹配环境、公司及账号后复用；切换身份时重新登录。`login --force` 强制重新登录。缓存和配置均为本机敏感数据，不提交 Git。
+- 需要 Node.js 18 及以上，无第三方依赖。脚本 `scripts/kb_e2e.js` 通过 `KB_ENV_FILE` 指定环境配置文件（未指定时默认读取仓库根目录 `.env.preprod`），也可通过 `KB_URL`、`KB_COMPANY_ID`、`KB_USERNAME`、`KB_PASSWORD` 覆盖对应项。不得回退读取其他项目的配置。
+  - **测试环境**：`KB_ENV_FILE=.env.test`
+  - **预生产环境**：`KB_ENV_FILE=.env.preprod`（或默认）
+  - **其他环境**：`KB_ENV_FILE=.env.<env>`（按用户指定的环境文件）
+- 配置文件字段为 `url`、`companyid`、`usrname`、`password`。密码、令牌和账号不写入命令参数、日志、报告或共享文档；不要输出配置文件内容。
+- 入口：在仓库根目录执行 `KB_ENV_FILE=.env.<env> node .agents/skills/kuaibuddy-preprod/scripts/kb_e2e.js login`。登录返回包含账号信息，记录执行结果时只保留脱敏后的成功或失败信息。登录会访问目标服务，仅在任务需要登录时执行。
+- **浏览器 UI 测试补充**：若获授权通过浏览器登录 KuaiBuddy，登录后可能弹出「用户引导」浮层，需先点击「跳过」/「我知道了」/「关闭」关掉引导页，再操作页面元素。
+- 令牌缓存保存在 `.runtime/cache/kuaibuddy-preprod/token.json`，匹配环境（`url`）、公司及账号后复用；切换环境或身份时重新登录（`login --force`）。缓存和配置均为本机敏感数据，不提交 Git。
 
 ## 任务执行
 

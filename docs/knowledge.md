@@ -1,8 +1,66 @@
 # KuaiBuddy 已确认测试知识
 
-当前没有已确认的项目测试经验。本文件不收录设计方案里的演示业务，也不把初始化检查当作业务经验。
+本文件收录有正式资料、源码核查或可追溯实测依据的测试经验。新增条目前先核对依据及适用条件；未确认观察、排查猜测和原始日志保留在 `.runtime/`。
 
-新增条目前先核对正式资料、可追溯证据及适用条件，并由工程师确认。未确认观察、排查猜测和原始日志保留在本次 Run。
+## K-001：SSE 断连不中断后端 Agent 执行，需通过 observe/active 恢复或 cancel 取消
+- 类型：排查经验
+- 验证状态：已确认（源码核查）
+- 适用模块与版本：`service-agent`（`beta` 分支 `3b72b2b`）、`ui-kuai-buddy`（`beta` 分支 `e9427a1`）
+- 适用条件：所有通过 `/api/v1/agent/run` 发起的 Agent 执行会话
+- 结论或建议：后端 `RunLifecycle` 独立订阅执行，`RunObservation` 负责 SSE 旁路转发与事件缓存。客户端断开 SSE 连接或刷新页面不会停止 Run，也不会改变 Run 终态（`RUNNING` → `SUCCEEDED`/`FAILED`/`CANCELLED`）。恢复观察应调用 `/api/v1/agent/run/observe?threadId=...` 或 `/api/v1/agent/run/active`，中止执行需显式调用 `/api/v1/agent/run/cancel`。测试并发或重连场景时不能将“断开请求”等同于“取消执行”。
+- 依据：`service-agent` `AgentServiceImpl.java`、`RunLifecycle.java`、`RunObservation.java`、`AgentController.java`；`ui-kuai-buddy/CONTEXT.md`
+- 关联任务／用例：[TASK-001](../tasks/TASK-001-基础对话回归.md)、[KB-DIALOG-001](../tests/cases/KB-DIALOG-001.md)
+- 确认人：Agent 代码核查（用户授权知识沉淀）
+- 最近核对日期：2026-11-18
+- 失效条件或复核提示：若后续调整 `RunObservation` 断连取消策略需重新核对
+
+## K-002：主模型采用会话粘性与异常冷却单向迁移机制
+- 类型：测试策略
+- 验证状态：已确认（源码核查）
+- 适用模块与版本：`service-agent` `ModelSelector.java`（`beta` 分支 `3b72b2b`）
+- 适用条件：多轮对话及并发压测场景
+- 结论或建议：`ModelSelector` 按 `CompanyUserKey + threadId` 在 Redis 缓存主模型绑定（`PIN_TTL = 3 小时`），并校验候选模型并发容量与冷却状态；若当前模型异常触发 `markCooldown`，会话会单向迁移至下一个未冷却候选，且 `AgentFactory` 另行装配 `FALLBACK` 备模型。排查同一会话回复风格或能力突变时，应按单个 `runId` 核查 Langfuse 中的实际模型，不能假设整段会话始终使用同一模型。
+- 依据：`service-agent` `ModelSelector.java`、`AgentFactory.java`
+- 关联任务／用例：[TASK-001](../tasks/TASK-001-基础对话回归.md)
+- 确认人：Agent 代码核查（用户授权知识沉淀）
+- 最近核对日期：2026-11-18
+- 失效条件或复核提示：模型路由策略或 `PIN_TTL` 配置变更时需复核
+
+## K-003：静默工具调用不落库且不透出 SSE，排查需查 Langfuse/ELK
+- 类型：排查经验
+- 验证状态：已确认（源码核查）
+- 适用模块与版本：`base` `ToolName.java`（`beta` 分支 `6deda08`）、`service-agent`
+- 适用条件：涉及 Skill 加载或千锤 MCP 协同的对话排查
+- 结论或建议：`ToolName.SILENT_TOOL_KEYS` 中的工具（`load_skill_through_path`、`qianchui_get_mcp_token`、`qianchui_load_diagnosis_card`、`ping`）为静默工具，执行结果不落消息库、不通过 SSE 透出到前端。测试验证技能加载或千锤取令牌是否实际触发时，不能仅看前端对话展示或 `/api/v1/messages`，须通过 Langfuse trace 或 ELK 日志核实。
+- 依据：`base` `ToolName.java#L168-L173`
+- 关联任务／用例：[kb-bug-analyse](../.agents/skills/kb-bug-analyse/SKILL.md)
+- 确认人：Agent 代码核查（用户授权知识沉淀）
+- 最近核对日期：2026-11-18
+- 失效条件或复核提示：`ToolName.SILENT_TOOL_KEYS` 名单增删时同步更新
+
+## K-004：预生产与测试环境 `agents` 列表接口返回业务码 9001 不代表对话不可用
+- 类型：已知缺陷 / 排查经验
+- 验证状态：已确认（只读实测）
+- 适用模块与版本：`preprod`（`.env.preprod`）与 `test`（`.env.test`）环境，通过 `kb_e2e.js` 调用
+- 适用条件：使用 `kuaibuddy-preprod` 技能查询辅助列表时
+- 结论或建议：实测在 `preprod` 与 `test` 环境执行 `kb_e2e.js agents` 均返回 `业务码 9001`（`SYSTEM_ERROR`），而同期 `kb_e2e.js skills` 可正常返回可用技能清单（`scope=0` 全局及 `scope=3` 个人技能）。排查或自动化脚本执行时不应因 `agents` 接口报错直接判定环境或默认助手不可用。
+- 依据：2026-11-18 只读实测（`.runtime/scratch/20261118-beta代码扫描与环境核查.md`）及 `.agents/skills/kuaibuddy-preprod/SKILL.md`
+- 关联任务／用例：[kuaibuddy-preprod](../.agents/skills/kuaibuddy-preprod/SKILL.md)
+- 确认人：Agent 只读实测（2026-11-18）
+- 最近核对日期：2026-11-18
+- 失效条件或复核提示：待后续版本修复 `agents` 接口后复核
+
+## K-005：Langfuse Trace 与 KuaiBuddy 业务标识精确映射规则
+- 类型：排查经验
+- 验证状态：已确认（源码核查）
+- 适用模块与版本：`service-agent` `BizTraceField.java`（`beta` 分支 `3b72b2b`）
+- 适用条件：使用 `kb-bug-analyse` 或 Langfuse 检索生产/预生产/测试运行轨迹时
+- 结论或建议：`BizTraceField` 是 OTel 上下文到 Langfuse 属性的唯一映射源：会话 `threadId` 映射 `langfuse.session.id`；单次执行 `runId` 映射 `langfuse.metadata.run_id`；`userId` 映射 `langfuse.user.id`；`compId`、`agentId`、`agentCode` 分别映射 `langfuse.metadata.comp_id`、`agent_id`、`agent_code`。检索时优先使用 `runId` 或 `threadId` 精确过滤，避免在共享观测环境中混淆生产与预生产数据。
+- 依据：`service-agent` `BizTraceField.java#L13-L38`
+- 关联任务／用例：[kb-bug-analyse](../.agents/skills/kb-bug-analyse/SKILL.md)
+- 确认人：Agent 代码核查（用户授权知识沉淀）
+- 最近核对日期：2026-11-18
+- 失效条件或复核提示：`BizTraceField.java` 字段变更时同步更新
 
 ## 知识条目模板（不是已确认知识）
 
