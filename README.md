@@ -109,7 +109,7 @@ Run ID 使用 UTC，记录展示时间须写明时区。初始化已建立 `.run
 
 ## 本机账号与环境配置
 
-KuaiBuddy 预生产环境入口见 [项目说明](docs/project.md)，个人公司 ID、账号和密码存放在本机 `.env.preprod`，不提交 Git。文件采用 `url`、`companyid`、`usrname`、`password` 字段。项目内 [kuaibuddy-preprod 技能](.agents/skills/kuaibuddy-preprod/SKILL.md)默认读取该文件，使用 Node.js 18 及以上；登录令牌保存在本机 `.runtime/cache/kuaibuddy-preprod/`。填写配置不代表已经验证登录或授权执行测试。
+测试、预生产、生产分别使用本机 `.env.test`、`.env.preprod`、`.env.prod`。环境与权限要求见 [项目说明](docs/project.md#测试环境与权限)，配置字段和调用方式见 [kb-test-execution 技能](.agents/skills/kb-test-execution/SKILL.md)的 [多环境对话 CLI](.agents/skills/kb-test-execution/references/kuai-buddy-cli.md)。环境文件与登录令牌仅保存在本机。填写配置后仍需核对本次授权与账号权限。
 
 ### 禅道配置
 

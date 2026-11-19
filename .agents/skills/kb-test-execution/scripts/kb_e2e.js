@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * KuaiBuddy 预生产环境 E2E 工具：登录 + 发起对话 + 回读会话。
+ * KuaiBuddy 多环境 E2E 工具：登录 + 发起对话 + 回读会话。
  *
  * 纯 Node 内置模块实现（crypto + fetch），无第三方依赖。
- * 登录密码按前端同款算法加密（md5 + AES-256-GCM），算法见 SKILL.md「登录密码加密」小节。
+ * 登录密码按前端同款算法加密（md5 + AES-256-GCM）。
  *
  * 子命令：
  *   login                     仅登录，打印账号信息（不含密码/令牌明文）
@@ -23,20 +23,20 @@
  *   skills                    列出可用技能
  *
  * 通用参数：
- *   --url <地址>              覆盖默认环境地址
+ *   --url <地址>              仅在进程变量模式下覆盖环境地址
  *   --timeout <秒>            单轮对话超时，默认 300
  *   --verbose                 打印 SSE 事件明细
  *   --json                    以 JSON 输出
  */
 
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
 const crypto = require('crypto');
 
 const DEFAULT_UA =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36';
 const WORKSPACE_ROOT = path.resolve(__dirname, '../../../..');
+// 保留原缓存路径，按站点、公司和账号匹配后复用。
 const CACHE_DIR = path.join(WORKSPACE_ROOT, '.runtime', 'cache', 'kuaibuddy-preprod');
 const CACHE_FILE = path.join(CACHE_DIR, 'token.json');
 
@@ -83,16 +83,9 @@ function parseArgs(argv) {
 
 /* ------------------------------------------------------------ 配置与凭据 */
 
-/**
- * 读取指定的预生产配置文件，按注释块与平面键值解析。
- */
+/** 读取指定的环境配置文件，兼容按注释分块的旧配置。 */
 function parseEnvFile(file) {
-  let raw;
-  try {
-    raw = fs.readFileSync(file, 'utf8');
-  } catch {
-    return { blocks: [], flat: {} };
-  }
+  const raw = fs.readFileSync(file, 'utf8');
   const blocks = [];
   const flat = {};
   let comment = '';
@@ -118,46 +111,49 @@ function parseEnvFile(file) {
   return { blocks, flat };
 }
 
-function envFileCandidates() {
-  return [process.env.KB_ENV_FILE || path.join(WORKSPACE_ROOT, '.env.preprod')];
-}
+function resolveConfig(flags, env = process.env) {
+  const envFile = env.KB_ENV_FILE;
+  let rawUrl = flags.url || env.KB_URL;
+  let companyId = env.KB_COMPANY_ID;
+  let username = env.KB_USERNAME;
+  let password = env.KB_PASSWORD;
 
-function resolveConfig(flags) {
-  let parsed = { blocks: [], flat: {} };
-  let envFile = '';
-  for (const f of envFileCandidates()) {
-    if (!fs.existsSync(f)) continue;
-    const p = parseEnvFile(f);
-    const hasKb = p.blocks.some((b) => b.vars.companyid && b.vars.url) || (p.flat.companyid && p.flat.url);
-    if (!hasKb && parsed.blocks.length === 0) continue; // 优先挑含预生产配置的 .env
-    parsed = p;
-    envFile = f;
-    if (hasKb) break;
+  if (envFile) {
+    if (rawUrl || companyId || username || password) {
+      throw new Error('配置冲突：请在 KB_ENV_FILE 与进程变量配置之间选择一种，文件模式也不接受 --url');
+    }
+    let parsed;
+    try {
+      parsed = parseEnvFile(envFile);
+    } catch {
+      throw new Error('无法读取 KB_ENV_FILE 指定的配置，请检查文件是否存在以及读取权限');
+    }
+    const block =
+      parsed.blocks.find(({ vars }) => vars.companyid && vars.url && !vars.username) ||
+      parsed.blocks.find(({ vars }) => vars.companyid && vars.url);
+    const values = block ? block.vars : parsed.flat;
+    rawUrl = values.url || values.kb_url;
+    companyId = values.companyid || values.kb_company_id;
+    username = values.usrname || values.kb_username || values.username;
+    password = values.password || values.kb_password;
+  } else if (!rawUrl || !companyId || !username || !password) {
+    throw new Error('未明确配置目标环境：请设置 KB_ENV_FILE（.env.test、.env.preprod 或 .env.prod），或完整提供进程变量配置');
   }
-  const preprod =
-    parsed.blocks.find((b) => b.vars.companyid && b.vars.url && !b.vars.username) ||
-    parsed.blocks.find((b) => b.vars.companyid && b.vars.url) ||
-    { vars: parsed.flat };
 
-  const v = preprod.vars || {};
-  const rawUrl = flags.url || process.env.KB_URL || v.url || v.kb_url || '';
-  // .env 里记的是前端页面地址（如 .../work/chat），API 挂在站点根路径，取 origin 即可
-  let baseUrl = '';
-  if (rawUrl) {
-    try { baseUrl = new URL(rawUrl).origin; } catch { baseUrl = rawUrl.replace(/\/+$/, ''); }
+  if (!rawUrl || !companyId || !username || !password) {
+    throw new Error('环境文件缺少登录所需字段，请检查 url、companyid、usrname 和 password');
   }
-  const cfg = {
-    baseUrl,
-    companyId: process.env.KB_COMPANY_ID || v.companyid || v.kb_company_id || '',
-    username: process.env.KB_USERNAME || v.usrname || v.kb_username || v.username || '',
-    password: process.env.KB_PASSWORD || v.kb_password || v.password || '',
-    ua: process.env.KB_UA || DEFAULT_UA,
-    envFile,
-  };
-  if (!cfg.baseUrl) die('缺少环境地址：请设置 KB_URL 或在工作区 .env 中配置 url');
-  if (!cfg.companyId) die('缺少公司 ID：请设置 KB_COMPANY_ID 或在 .env 中配置 companyid');
-  if (!cfg.username) die('缺少登录名：请设置 KB_USERNAME 或在 .env 中配置 usrname');
-  return cfg;
+  let url;
+  try {
+    url = new URL(rawUrl);
+  } catch {
+    throw new Error('环境地址无效，请提供完整的 HTTP 或 HTTPS 地址');
+  }
+  if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) {
+    throw new Error('环境地址须使用 HTTP 或 HTTPS，且不能包含账号或密码');
+  }
+  // 配置可能使用前端页面地址，API 请求只使用站点 origin。
+  return { baseUrl: url.origin, companyId, username, password, ua: env.KB_UA || DEFAULT_UA };
 }
 
 /* ---------------------------------------------------- 登录密码加密（同前端） */
@@ -207,8 +203,6 @@ async function apiPostForm(baseUrl, urlPath, fields, ua) {
 }
 
 async function login(cfg, { force = false } = {}) {
-  if (!cfg.password) die('缺少密码：请设置 KB_PASSWORD 或在 .env 中配置 password');
-
   if (!force) {
     const cached = readTokenCache(cfg);
     if (cached) return cached;
@@ -663,7 +657,7 @@ async function cmdSkills(cfg, flags) {
 
 const USAGE = `用法：kb_e2e.js <子命令> [参数]
 
-  login                              登录并打印账号信息
+  login [--force]                    登录并打印账号信息
   ask "<问题>"                       登录 + 发起对话
   ask --file <文件>                  从文件读取问题
   ask --session <sessionId>          在已有会话上继续对话
@@ -678,7 +672,9 @@ const USAGE = `用法：kb_e2e.js <子命令> [参数]
   agents                            列出可用 agent
   skills                            列出可用技能
 
-通用：--url <地址> --timeout <秒> --verbose --json
+配置：KB_ENV_FILE 选择 .env.test、.env.preprod 或 .env.prod
+也可完整提供 KB_URL、KB_COMPANY_ID、KB_USERNAME、KB_PASSWORD，进程变量模式支持 --url <地址>
+通用：--timeout <秒> --verbose --json
 `;
 
 async function main() {
@@ -708,4 +704,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { chat, requireApiSuccess };
+module.exports = { chat, requireApiSuccess, resolveConfig };

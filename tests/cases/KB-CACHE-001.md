@@ -22,23 +22,23 @@
 - **执行命令**：
   ```bash
   # 1. 强制登录多 MCP 账号（使用 .env.preprod）
-  KB_ENV_FILE=.env.preprod node .agents/skills/kuaibuddy-preprod/scripts/kb_e2e.js login --force
+  KB_ENV_FILE=.env.preprod node .agents/skills/kb-test-execution/scripts/kb_e2e.js login --force
 
   # 2. 第 1 轮（记录输出的 threadId 和 runId）
-  KB_ENV_FILE=.env.preprod node .agents/skills/kuaibuddy-preprod/scripts/kb_e2e.js ask \
+  KB_ENV_FILE=.env.preprod node .agents/skills/kb-test-execution/scripts/kb_e2e.js ask \
     "请用约800字介绍一下企业微信私域运营的核心流程（纯模型输出，不要调用任何工具或skill）。" \
     --json > /tmp/cache_r1.json
 
   THREAD_ID=$(python3 -c "import json; print(json.load(open('/tmp/cache_r1.json'))['threadId'])")
 
   # 3. 第 2 轮
-  KB_ENV_FILE=.env.preprod node .agents/skills/kuaibuddy-preprod/scripts/kb_e2e.js ask \
+  KB_ENV_FILE=.env.preprod node .agents/skills/kb-test-execution/scripts/kb_e2e.js ask \
     --session "$THREAD_ID" \
     "基于上面的内容，再补充3条落地时的常见避坑建议，约300字（纯模型输出，不要调用任何工具或skill）。" \
     --json > /tmp/cache_r2.json
 
   # 4. 第 3 轮
-  KB_ENV_FILE=.env.preprod node .agents/skills/kuaibuddy-preprod/scripts/kb_e2e.js ask \
+  KB_ENV_FILE=.env.preprod node .agents/skills/kb-test-execution/scripts/kb_e2e.js ask \
     --session "$THREAD_ID" \
     "把上面所有内容提炼成一张5行的要点清单（纯模型输出，不要调用任何工具或skill）。" \
     --json > /tmp/cache_r3.json
@@ -54,10 +54,11 @@
 - **目的**：验证未绑定个人 MCP 连接器的账号（`testpro2`）缓存命中率保持基线水平。
 - **执行命令**：
   ```bash
-  KB_URL="https://test-kuaibuddy.dingningtalk.com" KB_COMPANY_ID="232679" \
-  KB_USERNAME="testpro2" KB_PASSWORD="<password>" \
-  node .agents/skills/kuaibuddy-preprod/scripts/kb_e2e.js login --force
-  # 后续 3 轮 ask 命令同 TC-01（将 KB_ENV_FILE=.env.preprod 替换为上述 4 个环境变量）
+  # 先从本机可信配置加载对照账号的 KB_URL、KB_COMPANY_ID、KB_USERNAME、KB_PASSWORD。
+  # 本用例使用进程变量方式，先取消当前 shell 中的 KB_ENV_FILE。
+  unset KB_ENV_FILE
+  node .agents/skills/kb-test-execution/scripts/kb_e2e.js login --force
+  # 后续 3 轮 ask 命令同 TC-01，每次使用已加载的对照账号进程变量，省略 KB_ENV_FILE=.env.preprod
   ```
 - **通过标准**：
   - 第 2 轮缓存命中率 **≥ 90%**。
@@ -70,7 +71,7 @@
 - **执行命令**：
   ```bash
   # 在 TC-01 完成后 1 分钟内，不传 --session 新开会话
-  KB_ENV_FILE=.env.preprod node .agents/skills/kuaibuddy-preprod/scripts/kb_e2e.js ask \
+  KB_ENV_FILE=.env.preprod node .agents/skills/kb-test-execution/scripts/kb_e2e.js ask \
     "用100字说明企业微信客户标签的作用（纯模型输出，不要调用工具）" \
     --json > /tmp/cache_new_s1.json
   ```
@@ -83,7 +84,7 @@
 - **目的**：验证单轮内触发多次工具调用时，后续推理步能够复用前面步骤的上下文缓存。
 - **执行命令**：
   ```bash
-  KB_ENV_FILE=.env.preprod node .agents/skills/kuaibuddy-preprod/scripts/kb_e2e.js ask \
+  KB_ENV_FILE=.env.preprod node .agents/skills/kb-test-execution/scripts/kb_e2e.js ask \
     "帮我查一下当前有哪些可用的客户标签或群发任务（如需调用工具请正常调用）" \
     --json > /tmp/cache_tool.json
   ```

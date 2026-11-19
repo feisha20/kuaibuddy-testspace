@@ -48,6 +48,7 @@
     }
 
     *, *::before, *::after { box-sizing: border-box; }
+    [hidden] { display: none !important; }
     html { color-scheme: light; }
     body {
       margin: 0;
@@ -544,6 +545,7 @@
       grid-template-columns: repeat(auto-fill, minmax(430px, 1fr));
       gap: 14px;
     }
+    .cards-grid[hidden] { display: none; }
     @media (max-width: 600px) {
       .cards-grid { grid-template-columns: 1fr; }
     }
@@ -1497,6 +1499,7 @@ PY</code></pre>
       cleanup: "ALL",
       scenario: null,
       viewMode: "table",
+      shownCount: PAYLOAD.cases.length,
       activeCase: null
     };
 
@@ -1650,6 +1653,13 @@ PY</code></pre>
       return true;
     }
 
+    function syncViewVisibility() {
+      const hasItems = state.shownCount > 0;
+      tableWrap.hidden = !hasItems || state.viewMode !== "table";
+      cardsWrap.hidden = !hasItems || state.viewMode !== "cards";
+      emptyState.hidden = hasItems;
+    }
+
     function applyFilters() {
       const visibleIds = new Set(PAYLOAD.cases.filter(matchesFilters).map(c => c.id));
       let shown = 0;
@@ -1661,9 +1671,10 @@ PY</code></pre>
       for (const card of cardsWrap.children) {
         card.hidden = !visibleIds.has(card.dataset.id);
       }
+      state.shownCount = shown;
       document.getElementById("kpi-shown").textContent = String(shown);
       document.getElementById("filter-summary").textContent = `当前显示 ${shown} / ${PAYLOAD.cases.length} 项`;
-      emptyState.hidden = shown > 0;
+      syncViewVisibility();
       tableStatus.textContent = `筛选更新：当前显示 ${shown} 项底座考题，共 ${PAYLOAD.cases.length} 项。`;
     }
 
@@ -1864,8 +1875,7 @@ PY</code></pre>
     const btnViewCards = document.getElementById("btn-view-cards");
     const switchView = (mode) => {
       state.viewMode = mode;
-      tableWrap.hidden = mode !== "table";
-      cardsWrap.hidden = mode !== "cards";
+      syncViewVisibility();
       btnViewTable.setAttribute("aria-pressed", String(mode === "table"));
       btnViewCards.setAttribute("aria-pressed", String(mode === "cards"));
     };

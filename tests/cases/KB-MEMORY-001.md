@@ -345,5 +345,5 @@
 ---
 
 ## 自动化关联与清理
-- **脚本**：无（可基于 `kuaibuddy-preprod` 与 `kb-bug-analyse` 技能补充接口及 Langfuse 校验脚本）。
+- **脚本**：无（可基于 `kb-test-execution` 与 `kb-bug-analyse` 技能补充接口及 Langfuse 校验脚本）。
 - **清理**：测试完成后删除测试产生的 `user_memory` 记录；实际执行结果仅写入对应 Run 的 `execution.md` 与 `result.md`，不回填本用例文件。

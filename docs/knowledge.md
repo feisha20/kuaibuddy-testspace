@@ -42,10 +42,10 @@
 - 类型：已知缺陷 / 排查经验
 - 验证状态：已确认（只读实测）
 - 适用模块与版本：`preprod`（`.env.preprod`）与 `test`（`.env.test`）环境，通过 `kb_e2e.js` 调用
-- 适用条件：使用 `kuaibuddy-preprod` 技能查询辅助列表时
+- 适用条件：使用 `kb-test-execution` 的对话 CLI 查询辅助列表时
 - 结论或建议：实测在 `preprod` 与 `test` 环境执行 `kb_e2e.js agents` 均返回 `业务码 9001`（`SYSTEM_ERROR`），而同期 `kb_e2e.js skills` 可正常返回可用技能清单（`scope=0` 全局及 `scope=3` 个人技能）。排查或自动化脚本执行时不应因 `agents` 接口报错直接判定环境或默认助手不可用。
-- 依据：2026-11-18 只读实测（`.runtime/scratch/20261118-beta代码扫描与环境核查.md`）及 `.agents/skills/kuaibuddy-preprod/SKILL.md`
-- 关联任务／用例：[kuaibuddy-preprod](../.agents/skills/kuaibuddy-preprod/SKILL.md)
+- 依据：2026-11-18 只读实测（`.runtime/scratch/20261118-beta代码扫描与环境核查.md`）及现行 [多环境对话 CLI 说明](../.agents/skills/kb-test-execution/references/kuai-buddy-cli.md)
+- 关联任务／用例：[kb-test-execution](../.agents/skills/kb-test-execution/SKILL.md)
 - 确认人：Agent 只读实测（2026-11-18）
 - 最近核对日期：2026-11-18
 - 失效条件或复核提示：待后续版本修复 `agents` 接口后复核
