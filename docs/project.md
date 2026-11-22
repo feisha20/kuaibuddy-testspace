@@ -13,7 +13,7 @@
 | 测试负责人／团队 | 待补充 | 未确认 |
 | 产品与模块范围 | 工作台（对话、晨报、定时任务、灵感案例、文件库/产物、视频/图片、连接器/MCP、长期记忆、千锤协同、积分）与公司管理后台（看板、客服账号、岗位、专家/Skill/模板、团队任务、订阅）；详见 [系统架构说明](architecture.md) | 已基于 `beta` 分支代码梳理（`2026-11-18`），正式产品范围待确认 |
 | 正式需求与验收标准 | 待补充链接、版本及适用范围 | 未提供 |
-| API 文档与错误码 | 网关路由 `/api/v1/*`、`/admin/api/v1/*`、`/auth/*`；业务错误码分段定义见 `base` 仓 `BizCode.java`（成功码 `8`，错误码 `1001–10999`），自定义 SSE 事件见 `AguiCustomEvent.java`；摘要见 [系统架构说明](architecture.md#7-可观测性与业务错误码) | 已从 `beta` 分支源码梳理（`2026-11-18`） |
+| API 文档与错误码 | 网关路由 `/api/v1/*`、`/admin/api/v1/*`、`/auth/*`；业务错误码分段定义见 `base` 仓 `BizCode.java`（成功码 `8`，错误码 `1001–11999`），全量映射见 [业务错误码全量映射](biz-codes.md)，自定义 SSE 事件见 `AguiCustomEvent.java`；摘要见 [系统架构说明](architecture.md#7-可观测性与业务错误码) | 已从 `beta` 分支源码梳理（`2026-11-22` 补全错误码全量表） |
 | 系统架构与上下游 | 7 仓库微服务架构：`gateway`（9900）→ `web-agent`（9902）/ `service-agent`（9903，AgentScope + K8s Sandbox + Redis + MySQL + COS）/ `service-job`（9901，XXL-JOB），前端 `ui-kuai-buddy`（`/work`）与 `ui-admin`（`/admin`）；详见 [系统架构说明](architecture.md) | 已从 `beta` 分支源码梳理（`2026-11-18`） |
 | 缺陷系统与项目入口 | 禅道；本机入口与个人凭据通过根目录 .env 配置，项目／产品／冲刺 ID 待补充 | 用户已说明填写本机配置，连接与权限未验证 |
 | 被测系统代码版本来源 | 本地代码仓 `/Users/linjt/Documents/kst-projects/kuaibuddy-projects/`（`beta` 分支：`base@6deda08`、`gateway@9972f46`、`service-agent@3b72b2b`、`service-job@134b895`、`web-agent@1dbbe01`、`ui-kuai-buddy@e9427a1`、`ui-admin@4c2a5ea`，核对日期 `2026-11-18`） | 已核对本地 `beta` 分支 |
