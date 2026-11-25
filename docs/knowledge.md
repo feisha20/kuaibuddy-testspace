@@ -100,4 +100,16 @@
 - 失效条件或复核提示：<版本、规则变更等>
 ```
 
+## K-007：ego-browser 截图保存须使用 copyFileSync 复制临时文件路径
+- 类型：工具经验
+- 验证状态：已确认（实测验证）
+- 适用模块与版本：`ego-browser` v2.2.1（macOS）
+- 适用条件：使用 `ego-browser nodejs` 执行 `await page.screenshot()` 保存截图至本地目录时
+- 结论或建议：`page.screenshot()` 返回的是临时 PNG 文件路径字符串，而非图片二进制 `Buffer`。切勿直接 `fs.writeFileSync(targetPath, await page.screenshot())`（会写入 76B 路径字符串导致图片损坏），应使用 `fs.copyFileSync(await page.screenshot(), targetPath)` 并可用 `file` 命令校验 PNG 文件头。
+- 依据：2026-11-25 `MAN-004` 预生产 UI 测试实测验证（`PNG image data, 1500 x 798`）。
+- 关联任务／用例：[KB-RELEASE-MANUAL-001.md](tests/cases/KB-RELEASE-MANUAL-001.md)
+- 确认人：用户确认沉淀
+- 最近核对日期：2026-11-25
+- 失效条件或复核提示：`ego-browser` 升级并变更 `page.screenshot()` 返回值类型时复核
+
 其他成员无法直接访问本机 `.runtime/`。用于共享知识的关键依据应提供脱敏摘要或受控归档引用；失效条目保留编号并标记失效及替代条目。

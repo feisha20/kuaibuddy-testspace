@@ -58,7 +58,7 @@ for s in items[:20]:
 
 ## SMOKE-001：【基础对话与运行控制】多轮对话、Prompt Cache 命中率及断连/取消收口
 
-- **覆盖目标**：① 正常对话发起；② 第 2~3 轮 Prompt Cache 命中率达标且 System Prompt 无抖动；③ SSE 断连后 `/run/active` 与 `/run/observe` 可续接；④ `/run/cancel` 停止后会话不锁死（防 `#92963`）。
+- **覆盖目标**：① 正常对话发起；② 第 2~3 轮 Prompt Cache 命中率达标且 System Prompt 无抖动；③ SSE 断连后 `/run/active` 与 `/run/observe` 可续接；④ `/run/cancel` 停止后会话不锁死（防 `#92963`）；⑤ `/run/cancel` 后后台任务真实立即中断、不再继续生成或执行后续工具写入（防 `#93411`）。
 - **前置条件**：已完成第 0 节登录；具备 Langfuse 查询权限。
 
 ### 执行步骤（Agent / CLI 方式）
@@ -169,6 +169,13 @@ with urllib.request.urlopen(req_can, timeout=15) as resp:
     can = json.loads(resp.read().decode())
 print('[4.4] /run/cancel:', can)
 time.sleep(3)
+
+# 4.5 验证旧 Run 已在后台真正退出（防 #93411：不依赖后续请求抢占，active 列表应已清空）
+req_act2 = urllib.request.Request(f'{base}/api/v1/agent/run/active', data=b'{}', headers=headers, method='POST')
+with urllib.request.urlopen(req_act2, timeout=15) as resp:
+    act2 = json.loads(resp.read().decode())
+print('[4.5] /run/active after cancel:', act2)
+assert thread_id not in (act2.get('data') or []), f'cancel 后 {thread_id} 仍在后台运行: {act2}'
 PY
 
 # Step 5: 取消后立即在同一会话发第 5 轮，验证会话未锁死
@@ -182,15 +189,15 @@ node .agents/skills/kb-test-execution/scripts/kb_e2e.js ask \
 ### 人工 Web 端操作步骤（备选）
 1. 登录工作台，点击「新建任务」，依次发送上述第 1、2、3 轮提示词，确认回复完整且承接上文；
 2. 发送第 4 轮 3000 字 SOP 提示词，开始吐字 2 秒后直接按 `F5` 刷新页面，观察是否自动恢复流式输出（不断流）；
-3. 恢复吐字后点击输入框右侧「停止生成」按钮，等待 2 秒；
+3. 恢复吐字后点击输入框右侧「停止生成」按钮，等待 3~5 秒后刷新页面确认停止前内容未被后台继续补全（长输出/写入型任务应未继续生成或落盘）；
 4. 立即发送 `只回复两个字：正常`，确认可立刻回复“正常”且无“会话运行中”报错；
-5. 由测试/研发在 Langfuse 中按本次 `runId` 核对第 2、3 轮缓存命中率。
+5. 由测试/研发在 Langfuse 中按本次 `runId` 核对第 2、3 轮缓存命中率，并确认第 4 轮取消后无多余模型请求与工具调用。
 
 ### 判定标准（全部勾选为通过）
 - [ ] **[L1]** 第 1~3 轮均正常完整返回，无 `RunError` / `9001` / `4051`。
 - [ ] **[L2]** 第 2 轮与第 3 轮 Prompt Cache 命中率均 **≥ 90%**（待确认：换模型时按新基线校准），且 R1/R2 System Prompt 前缀无异常抖动。
 - [ ] **[L1]** SSE 断连后 `/run/active` 包含当前 `threadId`，且 `/run/observe` 可续接事件流。
-- [ ] **[L1/L3]** `/run/cancel` 后 3 秒内，第 5 轮可正常发起并包含「正常」，会话未锁死。
+- [ ] **[L1/L3]** `/run/cancel` 后 3 秒内，`/run/active` 已不再包含该 `threadId`（旧 Run 真正中断，防 `#93411`），且第 5 轮可正常发起并包含「正常」，会话未锁死。
 
 ---
 
