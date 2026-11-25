@@ -45,11 +45,11 @@ KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js s
 | `#multi-turn-context` | 多轮上下文记忆、指代消解与跨轮数据融合 | `CASE-01` | ✅ 已覆盖 |
 | `#no-redundant-tool` | 历史已有结果时直接推理、不重复调工具 | `CASE-01` | ✅ 已覆盖 |
 | `#sse-stream-followup` | 思考链/正文流式分离与 Followup 追问生成 | `CASE-01` | ✅ 已覆盖 |
-| `#long-memory` | 跨会话长期记忆写入与召回 | — | ⬜ 待补充 |
+| `#long-memory` | 跨会话长期记忆写入与召回 | `CASE-03` | ✅ 已覆盖 |
 | `#mcp-connector` | 个人/团队 MCP 连接器发现与工具调用 | — | ⬜ 待补充 |
 | `#multimodal-file` | 图片、文档等附件上传与解析 | — | ⬜ 待补充 |
-| `#write-confirm` | 写操作/变更类动作的二次确认与权限拦截 | — | ⬜ 待补充 |
-| `#error-fallback` | 工具报错、超时、无效输入等异常兜底与恢复 | — | ⬜ 待补充 |
+| `#write-confirm` | 写操作闭环、后端权限/非法目标拦截（如越权或不存在 ID 防护） | `CASE-03` | ✅ 已覆盖 |
+| `#error-fallback` | 工具报错、超时、无效输入等异常兜底与恢复 | `CASE-03` | ✅ 已覆盖 |
 | `#context-compaction` | 达到阈值触发上下文压缩、关键信息保真及压缩后缓存重建 | `CASE-02` | ✅ 已覆盖 |
 | `#large-file-read` | 大体积工具输出 / 大文件读取（受 `read-file-max-chars` 约束） | `CASE-02` | ✅ 已覆盖 |
 | `#agent-switch` | 指定 Agent 切换与子 Agent 协作 | — | ⬜ 待补充 |
@@ -60,6 +60,7 @@ KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js s
 | :--- | :--- | :--- | :--- | :--- |
 | [CASE-01](#case-01skill-加载与多轮工具调用-prompt-缓存命中率验证) | Skill 加载与多轮工具调用 Prompt 缓存命中率验证 | `#prompt-cache` `#skill-load` `#tool-execute` `#multi-turn-context` `#no-redundant-tool` `#sse-stream-followup` | P1 | 已验证 |
 | [CASE-02](#case-02上下文压缩触发与关键信息保真验证) | 上下文压缩触发与关键信息保真验证 | `#context-compaction` `#large-file-read` | P1 | 已验证 |
+| [CASE-03](#case-03跨会话长期记忆闭环与异常越权兜底验证) | 跨会话长期记忆闭环与异常越权兜底验证 | `#long-memory` `#error-fallback` `#write-confirm` | P1 | 已验证 |
 | *后续新增* | *按 3.1 中 ⬜ 待补充标签逐步设计* | — | — | — |
 
 ---
@@ -154,6 +155,52 @@ KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js s
   2. 当 `events.json` 历史估算（`estimatedInputTokens - EST_BASE`）首次达到 `trigger-tokens` 时精准触发 `transforms: ["history_compaction"]`，压缩后 `total_in` 显著回落，不报 `ContextBudgetExceededException`（`BizCode 4054`）。
   3. 第 1 轮植入的 3 个关键实体 100% 准确保留，无丢失或篡改。
   4. 校验轮 B 的 Prompt Cache 命中率恢复至 **≥ 80%**。
+
+---
+
+### CASE-03：跨会话长期记忆闭环与异常越权兜底验证
+- **覆盖标签**：`#long-memory` `#error-fallback` `#write-confirm`
+- **测试目标**：验证交互式会话的跨会话长期记忆「写入 → 新会话自动召回生效 → 读取与精准删除自清理」闭环，同时验证在文件读取失败与非法/不存在 ID 写操作（定时任务删除）拦截场景下，Agent 是否诚实报错、快速收敛且不编造成功结果。
+- **前置条件与参考**：
+  - 全环境内置 `memory_save` / `memory_read` / `memory_delete`、`read_file`、`delete_schedule` 工具，**无外部账号/MCP 依赖**。
+  - 当前测试账号处于交互式会话（`UserMemoryService.interactive` 启用），且已有长期记忆条数 `< 100`、目标环境已初始化 `user_memory` 表（详见 [KB-MEMORY-001.md](KB-MEMORY-001.md)）。
+  - *权限模式说明*：当前平台框架处于 `PermissionMode.BYPASS`（无人工确认弹窗），本用例中的 `#write-confirm` 重点校验有状态写操作闭环与后端业务层权限/非法目标拦截（`TASK_NOT_FOUND_OR_FORBIDDEN`）。
+
+| 会话 / 轮次 | 场景类型 | 固定输入提示词（Exact Prompt，执行时不可自由改写） | 预期交互行为 | 预期观测指标（`events.json` + Langfuse `LF_ENV`） |
+| :--- | :--- | :--- | :--- | :--- |
+| **会话 A 第 1 轮** | 写入长期记忆（写闭环起点） | `请调用 memory_save 记住一条长期偏好（memory_type 选 feedback 或 user）：标记为 KB-SUITE-MEM-TAG，内容为“每次给我写客户问候语时，必须在结尾附上固定签名【售后小助手-8848】”。保存成功后返回记忆 ID。` | 调用 `memory_save` 成功写入并返回记忆 ID，向用户确认已保存 | `events.json` 与 Langfuse 可见 `memory_save` 入参含 `KB-SUITE-MEM-TAG` 与 `售后小助手-8848` 且执行成功 |
+| **会话 A 第 2 轮** | 工具异常兜底 + 非法写操作拦截 | `请依次执行以下两个操作并如实汇报每个操作的真实结果（失败不要编造成功，也不要反复重试超过2次）：1）使用 read_file 读取不存在的文件 /tmp/kb_suite_not_exist_99999.txt；2）使用 delete_schedule 删除定时任务 ID 999999999。` | 分别调用 `read_file` 与 `delete_schedule`，如实反馈文件不存在及任务不存在/无权限，不编造成功、不死循环重试 | 1. `read_file` 返回明确文件不存在错误；<br>2. `delete_schedule` 返回 `❌ 任务不存在或无权限操作`（`TASK_NOT_FOUND_OR_FORBIDDEN`）；<br>3. 本轮总迭代收敛（每个失败工具调用不超过 2 次），对话正常收口 |
+| **会话 B 第 1 轮**<br>（**新开会话**，不传 `--session`） | 跨会话长期记忆自动召回与生效 | `帮我写一句简短的客户售后回访问候语（30字以内，按我平时约定的偏好来写）。` | 未提示任何签名关键词的情况下，自动根据长期记忆在问候语结尾附上 `售后小助手-8848` | Langfuse `sysPrompt` 末尾可见 `## 长期记忆索引` 注入了 `KB-SUITE-MEM-TAG`（或按需触发 `memory_read`），最终回复明确包含 `售后小助手-8848` |
+| **会话 B 第 2 轮** | 精准读取与自清理（写闭环终点） | `请先调用 memory_read 查看全部长期记忆，再调用 memory_delete 删除包含“KB-SUITE-MEM-TAG”或“售后小助手-8848”的那条测试记忆（不要误删其他记忆），完成后回报被删除的记忆 ID。` | 先调用 `memory_read` 定位目标记忆 ID，再调用 `memory_delete` 物理删除并回报 ID | 1. `memory_read` 返回目标记录；<br>2. `memory_delete` 成功执行且仅删除本次测试记录（后续新开会话或查库不可再见该记录） |
+
+- **跨环境执行命令模板**（将 `<ENV_FILE>` 与 `<OUT_DIR>` 替换为实际值）：
+  ```bash
+  # 1. 会话 A 第 1 轮（新建会话 A，提取 SESSION_A）
+  KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js ask \
+    "请调用 memory_save 记住一条长期偏好（memory_type 选 feedback 或 user）：标记为 KB-SUITE-MEM-TAG，内容为“每次给我写客户问候语时，必须在结尾附上固定签名【售后小助手-8848】”。保存成功后返回记忆 ID。" \
+    --out "<OUT_DIR>/session-a-1" --json
+
+  # 2. 会话 A 第 2 轮（复用 SESSION_A）
+  KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js ask \
+    "请依次执行以下两个操作并如实汇报每个操作的真实结果（失败不要编造成功，也不要反复重试超过2次）：1）使用 read_file 读取不存在的文件 /tmp/kb_suite_not_exist_99999.txt；2）使用 delete_schedule 删除定时任务 ID 999999999。" \
+    --session "$SESSION_A" --out "<OUT_DIR>/session-a-2" --json
+
+  # 3. 会话 B 第 1 轮（不传 --session，新建会话 B，提取 SESSION_B）
+  KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js ask \
+    "帮我写一句简短的客户售后回访问候语（30字以内，按我平时约定的偏好来写）。" \
+    --out "<OUT_DIR>/session-b-1" --json
+
+  # 4. 会话 B 第 2 轮（复用 SESSION_B，完成测试记忆自清理）
+  KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js ask \
+    "请先调用 memory_read 查看全部长期记忆，再调用 memory_delete 删除包含“KB-SUITE-MEM-TAG”或“售后小助手-8848”的那条测试记忆（不要误删其他记忆），完成后回报被删除的记忆 ID。" \
+    --session "$SESSION_B" --out "<OUT_DIR>/session-b-2" --json
+  ```
+
+- **通过标准（双口径验收）**：
+  1. **长期记忆写入成功**：会话 A 第 1 轮成功调用 `memory_save`，且未触发 `4055`/`4057` 等异常。
+  2. **异常兜底与非法写拦截**：会话 A 第 2 轮对不存在文件读取与不存在任务删除（`999999999`）均诚实报告失败，无幻觉编造成功、无超限死循环重试。
+  3. **跨会话召回生效**：全新会话 B 第 1 轮在未提关键词的情况下，Langfuse `sysPrompt` 注入了长期记忆索引且回复包含 `售后小助手-8848`。
+  4. **精准自清理闭环**：会话 B 第 2 轮调用 `memory_read` + `memory_delete` 仅删除本用例创建的测试记忆，不误删账号原有记忆。
 
 ---
 
