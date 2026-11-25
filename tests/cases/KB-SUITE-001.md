@@ -47,12 +47,12 @@ KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js s
 | `#sse-stream-followup` | 思考链/正文流式分离与 Followup 追问生成 | `CASE-01` | ✅ 已覆盖 |
 | `#long-memory` | 跨会话长期记忆写入与召回 | `CASE-03` | ✅ 已覆盖 |
 | `#mcp-connector` | 个人/团队 MCP 连接器发现与工具调用 | — | ⬜ 待补充 |
-| `#multimodal-file` | 图片、文档等附件上传与解析 | — | ⬜ 待补充 |
+| `#multimodal-file` | 图片、文档等附件入库交付与视觉识图解析（`save_to_library` / `save_image_to_library` / `analyze_image`） | `CASE-04` | ✅ 已覆盖 |
 | `#write-confirm` | 写操作闭环、后端权限/非法目标拦截（如越权或不存在 ID 防护） | `CASE-03` | ✅ 已覆盖 |
 | `#error-fallback` | 工具报错、超时、无效输入等异常兜底与恢复 | `CASE-03` | ✅ 已覆盖 |
 | `#context-compaction` | 达到阈值触发上下文压缩、关键信息保真及压缩后缓存重建 | `CASE-02` | ✅ 已覆盖 |
 | `#large-file-read` | 大体积工具输出 / 大文件读取（受 `read-file-max-chars` 约束） | `CASE-02` | ✅ 已覆盖 |
-| `#agent-switch` | 指定 Agent 切换与子 Agent 协作 | — | ⬜ 待补充 |
+| `#agent-switch` | 子 Agent 派发协作（`agent_spawn`）与结果汇总 | `CASE-04` | ✅ 已覆盖 |
 
 ### 3.2 测试用例索引
 
@@ -61,6 +61,7 @@ KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js s
 | [CASE-01](#case-01skill-加载与多轮工具调用-prompt-缓存命中率验证) | Skill 加载与多轮工具调用 Prompt 缓存命中率验证 | `#prompt-cache` `#skill-load` `#tool-execute` `#multi-turn-context` `#no-redundant-tool` `#sse-stream-followup` | P1 | 已验证 |
 | [CASE-02](#case-02上下文压缩触发与关键信息保真验证) | 上下文压缩触发与关键信息保真验证 | `#context-compaction` `#large-file-read` | P1 | 已验证 |
 | [CASE-03](#case-03跨会话长期记忆闭环与异常越权兜底验证) | 跨会话长期记忆闭环与异常越权兜底验证 | `#long-memory` `#error-fallback` `#write-confirm` | P1 | 已验证 |
+| [CASE-04](#case-04子-agent-派发识图与文件产物交付验证) | 子 Agent 派发、识图与文件产物交付验证 | `#agent-switch` `#multimodal-file` | P1 | 已验证 |
 | *后续新增* | *按 3.1 中 ⬜ 待补充标签逐步设计* | — | — | — |
 
 ---
@@ -201,6 +202,38 @@ KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js s
   2. **异常兜底与非法写拦截**：会话 A 第 2 轮对不存在文件读取与不存在任务删除（`999999999`）均诚实报告失败，无幻觉编造成功、无超限死循环重试。
   3. **跨会话召回生效**：全新会话 B 第 1 轮在未提关键词的情况下，Langfuse `sysPrompt` 注入了长期记忆索引且回复包含 `售后小助手-8848`。
   4. **精准自清理闭环**：会话 B 第 2 轮调用 `memory_read` + `memory_delete` 仅删除本用例创建的测试记忆，不误删账号原有记忆。
+
+---
+
+### CASE-04：子 Agent 派发、识图与文件产物交付验证
+- **覆盖标签**：`#agent-switch` `#multimodal-file`
+- **测试目标**：验证主 Agent 通过 `agent_spawn` 派发 `general-purpose` 子 Agent 在工作区生成图片与 Markdown 产物、主 Agent 调用 `save_image_to_library` / `save_to_library` 持久化交付真实 `accessUrl`，以及调用 `analyze_image` 识别入库图片内容的端到端闭环。
+- **前置条件**：
+  - 全环境内置 `agent_spawn`、`execute`、`save_image_to_library`、`save_to_library`、`analyze_image` 工具，**无外部账号/MCP 依赖**。
+  - 注意：`save_to_library` / `save_image_to_library` 仅允许工作区相对路径（如 `artifacts/...`），禁止 `/tmp` 等工作区外路径；`analyze_image` 仅接受入库后的有效 `http(s)` URL。
+
+| 轮次 | 场景类型 | 固定输入提示词（Exact Prompt，执行时不可自由改写） | 预期交互行为 | 预期观测指标（`events.json` + Langfuse `LF_ENV`） |
+| :--- | :--- | :--- | :--- | :--- |
+| **第 1 轮** | 子 Agent 派发 + 生成图/报告 + 入库交付 | `请使用 agent_spawn 派发一个子 Agent（general-purpose），让它在当前工作区完成两件事：1）在 artifacts/case04_vision.png 生成一张白底黑字的高对比度 PNG 图片，图片中央清晰写出大号数字“8848”（字号占画面一半以上，可用 PIL 或纯 Python 生成）；2）在 artifacts/case04_report.md 写入一段 50 字以内的测试说明。子 Agent 完成后，由你调用 save_image_to_library 保存 artifacts/case04_vision.png，调用 save_to_library 保存 artifacts/case04_report.md，并返回两个产物的真实 accessUrl。` | 派发 `general-purpose` 子 Agent 生成两个工作区文件并汇总结果，主 Agent 调用 `save_image_to_library` 与 `save_to_library` 入库，返回两个有效 `accessUrl` | 1. `events.json` / Langfuse 可见 `agent_spawn` 调用；<br>2. 可见 `save_image_to_library` 与 `save_to_library` 成功返回 `attachmentId` 与真实 `http(s)` `accessUrl` |
+| **第 2 轮** | 视觉识图模型解析验证 | `请调用 analyze_image 工具查看上一轮 save_image_to_library 返回的图片 URL，告诉我图片中央显示的数字是什么。` | 调用 `analyze_image` 读取入库图片 URL 并准确识别出数字 `8848` | 1. Langfuse 可见 `analyze_image` 工具调用，入参 `image_refs` 为第 1 轮返回的真实图片 URL；<br>2. 最终回复准确包含 `8848` |
+
+- **跨环境执行命令模板**（将 `<ENV_FILE>` 与 `<OUT_DIR>` 替换为实际值）：
+  ```bash
+  # 1. 第 1 轮（新建会话，提取 THREAD_ID）
+  KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js ask \
+    "请使用 agent_spawn 派发一个子 Agent（general-purpose），让它在当前工作区完成两件事：1）在 artifacts/case04_vision.png 生成一张白底黑字的高对比度 PNG 图片，图片中央清晰写出大号数字“8848”（字号占画面一半以上，可用 PIL 或纯 Python 生成）；2）在 artifacts/case04_report.md 写入一段 50 字以内的测试说明。子 Agent 完成后，由你调用 save_image_to_library 保存 artifacts/case04_vision.png，调用 save_to_library 保存 artifacts/case04_report.md，并返回两个产物的真实 accessUrl。" \
+    --out "<OUT_DIR>/turn-1" --json
+
+  # 2. 第 2 轮（复用 THREAD_ID，验证识图）
+  KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js ask \
+    "请调用 analyze_image 工具查看上一轮 save_image_to_library 返回的图片 URL，告诉我图片中央显示的数字是什么。" \
+    --session "$THREAD_ID" --out "<OUT_DIR>/turn-2" --json
+  ```
+
+- **通过标准（双口径验收）**：
+  1. **子 Agent 协作生效**：第 1 轮成功触发 `agent_spawn`（`general-purpose`）并完成文件生成。
+  2. **产物入库交付**：`save_image_to_library` 与 `save_to_library` 均成功返回真实 `accessUrl`（未出现沙箱路径泄漏或虚构链接）。
+  3. **识图模型闭环**：第 2 轮实际调用 `analyze_image` 且准确识别出图片中的数字 `8848`。
 
 ---
 
