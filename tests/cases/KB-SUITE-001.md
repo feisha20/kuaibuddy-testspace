@@ -54,6 +54,10 @@ KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js s
 | `#large-file-read` | 大体积工具输出 / 大文件读取（受 `read-file-max-chars` 约束） | `CASE-02` | ✅ 已覆盖 |
 | `#agent-switch` | 子 Agent 派发协作（`agent_spawn`）与结果汇总 | `CASE-04` | ✅ 已覆盖 |
 | `#scheduled-task` | 定时任务全生命周期管理（7 个工具）、XXL-JOB 触发执行及定时会话隔离 | `CASE-06` | ✅ 已覆盖 |
+| `#fs-code-tools` | 框架文件编辑与多维检索工具链（`write_file` / `edit_file` / `list_files` / `glob_files` / `grep_files`） | `CASE-07` | ✅ 已覆盖 |
+| `#web-fetch` | 公网网页抓取（`web_fetch`）及默认禁用 `web_search` 隔离验证 | `CASE-07` | ✅ 已覆盖 |
+| `#todo-plan` | 多步任务结构化待办清单维护（`todo_write`） | `CASE-07` | ✅ 已覆盖 |
+| `#tool-result-eviction` | 大体积工具输出自动卸载预览与命令行超时预算前置拦截（`requireShellBudget`） | `CASE-07` | ✅ 已覆盖 |
 
 ### 3.2 测试用例索引
 
@@ -65,6 +69,7 @@ KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js s
 | [CASE-04](#case-04子-agent-派发识图与文件产物交付验证) | 子 Agent 派发、识图与文件产物交付验证 | `#agent-switch` `#multimodal-file` | P1 | 已验证 |
 | [CASE-05](#case-05个人-mcp-连接器全生命周期与安全边界验证) | 个人 MCP 连接器全生命周期与安全边界验证 | `#mcp-connector` | P1 | 已验证 |
 | [CASE-06](#case-06定时任务全生命周期管理与触发隔离验证) | 定时任务全生命周期管理与触发隔离验证 | `#scheduled-task` | P1 | 已验证 |
+| [CASE-07](#case-07框架文件检索任务规划联网抓取与大输出卸载验证) | 框架文件检索、任务规划、联网抓取与大输出卸载验证 | `#fs-code-tools` `#web-fetch` `#todo-plan` `#tool-result-eviction` | P1 | 已验证 |
 | *后续扩展* | *核心底座按需扩展中（其余专项见 [KB-RELEASE-SMOKE-001.md](KB-RELEASE-SMOKE-001.md)）* | — | — | — |
 
 ---
@@ -322,6 +327,42 @@ KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js s
   2. **调度触发与指令更新生效**：XXL-JOB 到点执行成功（`status="success"`），`sched_*` 会话准确输出第 2 轮改写后的暗号 `KB-SUITE-SCHED-OK-8848`（非初版文案）。
   3. **定时会话隔离有效**：Langfuse 中 `<SCHED_THREAD_ID>` 的 `GENERATION.input` 不含 `## 长期记忆索引`，工具列表中不含任何 `memory_*` 与 `*_schedule` 工具。
   4. **无残留自清理**：第 4 轮删除后 `/schedule/scheduled` `data.resultlist` 不再包含 `<TASK_ID>`，且账号下既有定时任务状态保持原样。
+
+---
+
+### CASE-07：框架文件检索、任务规划、联网抓取与大输出卸载验证
+- **覆盖标签**：`#fs-code-tools` `#web-fetch` `#todo-plan` `#tool-result-eviction`
+- **测试目标**：验证框架自带文件编辑与检索工具链（`write_file` / `edit_file` / `list_files` / `glob_files` / `grep_files`）、结构化待办维护（`todo_write`）、网页抓取（`web_fetch` 及 `web_search` 默认禁用隔离）、超长命令输出自动卸载（`ToolResultEviction`）与命令行超时预算前置拦截（`requireShellBudget`）。
+- **前置条件与边界说明**：
+  - 全环境内置上述工具，**无外部账号/MCP 依赖**，仅需目标环境沙箱/服务具备访问 `https://example.com` 的出站网络权限。
+  - **阈值依据**：未显式覆盖 Nacos 配置时生效 `AgentProperties` 默认值——`tool-result-eviction.max-result-chars = 60,000`、`preview-chars = 6,000`，`tool.execution-timeout = PT10M`（`600s`，校验 `timeout + 30s < PT10M`）；第 2 轮构造约 `90,000` 字符输出触发卸载，传 `timeout = 600` 触发前置拒绝。
+  - **网页标题说明**：`https://example.com` 页面可能仅提供 `<title>` 而无 `<h1>`，提示词统一按「`title` 或 `h1`」提取，避免多余改写步骤。
+
+| 轮次 | 场景类型 | 固定输入提示词（Exact Prompt，执行时不可自由改写） | 预期交互行为 | 预期观测指标（`events.json` + Langfuse `LF_ENV`） |
+| :--- | :--- | :--- | :--- | :--- |
+| **第 1 轮**<br>（新建会话） | 规划 + 联网抓取 + 文件编辑检索全套 | `请先调用 todo_write 创建包含 4 个步骤的待办清单并在推进时更新状态，依次完成以下操作（必须使用对应专用工具，不要用 execute 代替文件/检索操作）：1）调用 web_fetch 抓取 https://example.com，提取页面标题（title 或 h1）；2）用 write_file 在 case07_tmp/notes.md 写入两行内容：第一行为“标题: <抓取到的页面标题>”，第二行为“状态: DRAFT-1001”，另用 write_file 写入 case07_tmp/sub/info.txt 内容为“锚点: KB-CASE07-GREP-8848”；3）用 edit_file 将 case07_tmp/notes.md 中的“DRAFT-1001”精确替换为“DONE-2002”；4）依次调用 list_files（查看 case07_tmp）、glob_files（在 case07_tmp 下查找所有 .txt 文件）、grep_files（在 case07_tmp 下搜索字面量 KB-CASE07-GREP-8848）。最后将待办全部标为 completed，并汇报页面标题、替换后状态、glob 与 grep 命中路径。` | 按待办推进，全部使用专用工具完成网页抓取、文件写改及列表/Glob/Grep 检索 | 1. Langfuse 实录 `todo_write`、`web_fetch`、`write_file`、`edit_file`、`list_files`、`glob_files`、`grep_files` **7 类工具均成功**；<br>2. `GENERATION.input` 工具列表中**不含 `web_search`**，无误调 `web_search`；<br>3. 回复准确包含 `Example Domain`、`DONE-2002` 与 `case07_tmp/sub/info.txt` |
+| **第 2 轮**<br>（同会话） | 大工具输出自动卸载 + 超时预算前置拦截 | `请执行以下两项沙箱边界验证并如实汇报结果（每项失败不要反复重试）：1）调用 execute 执行命令 python3 -c "print('EVICT-HEAD-8848 ' + 'A'*45000 + ' EVICT-MID-9999 ' + 'B'*45000 + ' EVICT-TAIL-7777')"（总输出约 90,000 字符），观察输出是否被截断/卸载，并汇报你实际看到的头尾标记或卸载文件引用；2）调用 execute 执行 echo budget_check，但刻意将参数 timeout 设为 600（不要调小重试），如实汇报平台返回的参数校验错误。` | 第 1 次命令成功且输出落盘至 `large_tool_results/`，回复准确识别头尾锚点与卸载路径；第 2 次命令未启动即报错且不擅自重试 | 1. Langfuse 实录 90k 输出落盘（不报 `4054`），后续 `GENERATION` 仅增预览 Token、可见头 `EVICT-HEAD-8848` 与尾 `EVICT-TAIL-7777`；<br>2. `execute(timeout=600)` 前置报错含 `命令未启动` / `PT10M30S` / `PT10M`，`budget_check` 未执行；<br>3. 第 2 轮首步 Prompt Cache 正常命中（**≥ 90%**） |
+| **第 3 轮**<br>（同会话） | 沙箱测试残留清理 | `请删除工作区临时目录 case07_tmp 以及本会话第 2 轮在 large_tool_results/ 下生成的超长输出卸载文件（仅删除这几项本次测试产物，勿动其他文件），并调用 list_files 检查当前工作区确认 case07_tmp 已不存在。` | 清理 `case07_tmp` 与第 2 轮卸载文件并复核工作区干净 | `list_files` 确认 `case07_tmp` 已不存在且未误删其他目录/文件 |
+
+- **跨环境执行命令模板**（将 `<ENV_FILE>` 与 `<OUT_DIR>` 替换为实际值）：
+  ```bash
+  # 第 1 轮（新建会话，提取 THREAD_ID）
+  KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js ask \
+    "<第1轮固定提示词>" --out "<OUT_DIR>/turn-1" --json
+
+  # 第 2~3 轮（复用 THREAD_ID 串行执行）
+  KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js ask \
+    "<第2轮固定提示词>" --session "$THREAD_ID" --out "<OUT_DIR>/turn-2" --json
+
+  KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js ask \
+    "<第3轮固定提示词>" --session "$THREAD_ID" --out "<OUT_DIR>/turn-3" --json
+  ```
+
+- **通过标准（双口径验收）**：
+  1. **专用工具链完整**：第 1 轮在 Langfuse 命中 `todo_write`、`web_fetch`、`write_file`、`edit_file`、`list_files`、`glob_files`、`grep_files` 7 类工具，且 `web_search` 未挂载。
+  2. **超长输出卸载生效**：第 2 轮 90k `execute` 输出触发卸载至 `large_tool_results/`、保留首尾 `6,000` 字符预览且不触发 `4054` 上下文超限。
+  3. **预算参数拦截生效**：`execute(timeout=600)` 在命令启动前即返回总预算校验错误且未重试执行。
+  4. **无残留自清理**：第 3 轮删除 `case07_tmp` 及本会话生成的卸载文件，工作区恢复干净。
 
 ---
 
