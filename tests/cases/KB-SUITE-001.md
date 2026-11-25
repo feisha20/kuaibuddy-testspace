@@ -53,6 +53,7 @@ KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js s
 | `#context-compaction` | 达到阈值触发上下文压缩、关键信息保真及压缩后缓存重建 | `CASE-02` | ✅ 已覆盖 |
 | `#large-file-read` | 大体积工具输出 / 大文件读取（受 `read-file-max-chars` 约束） | `CASE-02` | ✅ 已覆盖 |
 | `#agent-switch` | 子 Agent 派发协作（`agent_spawn`）与结果汇总 | `CASE-04` | ✅ 已覆盖 |
+| `#scheduled-task` | 定时任务全生命周期管理（7 个工具）、XXL-JOB 触发执行及定时会话隔离 | `CASE-06` | ✅ 已覆盖 |
 
 ### 3.2 测试用例索引
 
@@ -63,7 +64,8 @@ KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js s
 | [CASE-03](#case-03跨会话长期记忆闭环与异常越权兜底验证) | 跨会话长期记忆闭环与异常越权兜底验证 | `#long-memory` `#error-fallback` `#write-confirm` | P1 | 已验证 |
 | [CASE-04](#case-04子-agent-派发识图与文件产物交付验证) | 子 Agent 派发、识图与文件产物交付验证 | `#agent-switch` `#multimodal-file` | P1 | 已验证 |
 | [CASE-05](#case-05个人-mcp-连接器全生命周期与安全边界验证) | 个人 MCP 连接器全生命周期与安全边界验证 | `#mcp-connector` | P1 | 已验证 |
-| *后续扩展* | *当前 14/14 基线标签已全覆盖，后续按需扩展新标签（见 [KB-RELEASE-SMOKE-001.md](KB-RELEASE-SMOKE-001.md)）* | — | — | — |
+| [CASE-06](#case-06定时任务全生命周期管理与触发隔离验证) | 定时任务全生命周期管理与触发隔离验证 | `#scheduled-task` | P1 | 已验证 |
+| *后续扩展* | *核心底座按需扩展中（其余专项见 [KB-RELEASE-SMOKE-001.md](KB-RELEASE-SMOKE-001.md)）* | — | — | — |
 
 ---
 
@@ -279,6 +281,47 @@ KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js s
   4. **异常兜底与缓存稳定**：Turn 2 实际调用 `<prefix>__fail`（不超过 2 次）并如实报错，不编造成功；同时跨轮 Prompt Cache 命中率稳定达标（**≥ 90%**）。
   5. **停用即时隔离**：Turn 3 的 Langfuse `sysPrompt` 注入停用提示、`<prefix>__*` 工具调用次数为 `0`，回复明确反馈连接器不可用。
   6. **无残留自清理**：Step 5 删除后 `/list` 不再包含 `kb-suite-case05-mcp`，原有连接器全部完好保留。
+
+---
+
+### CASE-06：定时任务全生命周期管理与触发隔离验证
+- **覆盖标签**：`#scheduled-task`
+- **测试目标**：验证定时任务 7 个内置管理工具（`create_schedule` / `list_schedules` / `update_schedule_info` / `pause_schedule` / `resume_schedule` / `update_schedule_frequency` / `delete_schedule`）的完整闭环，校验 XXL-JOB 真实到点触发执行与新指令生效，并审计定时会话的隔离边界（不挂载长期记忆与定时任务工具）。
+- **前置条件与边界说明**：
+  - **调度器周期规则**：`ScheduleTool` 仅支持 `DAILY` / `WEEKLY` / `MONTHLY` / `YEARLY`，无一次性模式。第 1 轮先创建远期 `DAILY 23:59`，避免中途修改与暂停阶段意外触发；第 3 轮再改频为近期 `T+2` 或 `T+3` 分钟（东八区 `now.second <= 38` 取 `T+2`，否则取 `T+3`）以验证真实 Cron 触发。
+  - **定时会话隔离口径**：定时触发使用 `SessionSource.SCHEDULED`（`threadId` 前缀 `sched_`），后端在 `AgentFactory` 与 `ToolkitFactory` 中显式不挂载 `## 长期记忆索引`、`memory_*` 工具与 `*_schedule` 工具（防止定时任务自建递归循环）。
+  - **Web 分页字段与兜底清理**：`POST /web/agent/api/v1/schedule/scheduled` 与 `/executions` 返回 `RespByPage` 列表字段名为 **`data.resultlist`**；脚本须在 `finally` 中检查 `data.resultlist` 并兜底调用 `POST /web/agent/api/v1/schedule/delete?taskId=<TASK_ID>`，防止遗留周期扣费任务。
+
+| 阶段 / 轮次 | 场景类型 | 固定输入提示词 / 操作（执行时除动态 `<TASK_ID>` 与 `<HOUR>/<MINUTE>` 外保持固定） | 预期交互行为 | 预期观测指标（API + `events.json` + Langfuse `LF_ENV`） |
+| :--- | :--- | :--- | :--- | :--- |
+| **第 1 轮**<br>（新建会话） | 创建与列表查询<br>(`create_schedule` + `list_schedules`) | `请调用 create_schedule 创建一个每日定时任务：名称为「KB-SUITE-06-初版」，频率类型 DAILY，时间为每天 23:59，执行指令为“只回复初版文案，不要调用任何工具”。创建完成后立即调用 list_schedules 查询我的定时任务列表，并返回该任务的任务 ID 和当前状态。` | 创建 `DAILY 23:59` 定时任务并查询列表，提取 `<TASK_ID>` 与 `运行中` 状态 | 1. Langfuse 实录 `create_schedule` 与 `list_schedules` 成功；<br>2. `/web/agent/api/v1/schedule/scheduled` `data.resultlist` 查到 `<TASK_ID>` 且 `triggerStatus = "RUNNING"` |
+| **第 2 轮**<br>（同会话） | 改信息→暂停→查状态→恢复<br>(`update_schedule_info` / `pause_schedule` / `list_schedules` / `resume_schedule`) | `请对刚才创建的定时任务 ID <TASK_ID> 依次执行以下 4 步并汇报每步结果：1）调用 update_schedule_info 将名称改为「KB-SUITE-06-更新版」，并将执行指令改为“只回复固定暗号 KB-SUITE-SCHED-OK-8848，不要调用任何工具”；2）调用 pause_schedule 暂停该任务；3）调用 list_schedules 确认其状态已变为已暂停；4）调用 resume_schedule 恢复该任务运行。` | 顺序执行 4 步变更，第 3 步列表显式展示「已暂停」，第 4 步成功恢复运行 | 1. Langfuse 按序实录 `update_schedule_info` → `pause_schedule` → `list_schedules`（输出含 `已暂停`）→ `resume_schedule` 均成功；<br>2. 回复逐项汇报 4 步状态变化 |
+| **第 3 轮**<br>（同会话） | 修改触发频率<br>(`update_schedule_frequency`) | 按东八区 `target_dt = now + (2m if now.second <= 38 else 3m)` 计算 `<HOUR>`、`<MINUTE>`，发送：<br>`请调用 update_schedule_frequency 将定时任务 ID <TASK_ID> 的执行频率更新为 DAILY、每天 <HOUR> 点 <MINUTE> 分，并返回更新后的下次执行时间。` | 更新为近期触发时间并返回新的下次执行时间 | Langfuse 实录 `update_schedule_frequency` 返回 `✅ 频率已更新`，`/schedule/scheduled` 确认时间与状态 `RUNNING` |
+| **Step 4**<br>（异步触发与隔离核验） | 真实 Cron 到点触发 + 新指令输出 + **定时会话隔离** | 轮询 `POST /web/agent/api/v1/schedule/executions`（入参 `{"pageNum":1,"pageSize":20}`）等待目标分钟到点触发（*注：若目标环境仅验证执行器、不等待 Cron，可用 `POST /web/agent/api/v1/schedule/trigger?taskId=<TASK_ID>` 触发并在 Run 中注明*） | XXL-JOB 准时触发生成 `sched_*` 会话并按第 2 轮更新后的指令回复 | 1. `data.resultlist` 中 `<TASK_ID>` 状态为 `"success"`，取得 `<SCHED_THREAD_ID>`；<br>2. `kb_e2e.js messages --session <SCHED_THREAD_ID>` 回读准确包含 `KB-SUITE-SCHED-OK-8848`；<br>3. Langfuse 按 `sessionId=<SCHED_THREAD_ID>` 核验：`sysPrompt` **不含** `## 长期记忆索引`，`tools` **不含** `memory_*` 与 `*_schedule` |
+| **第 4 轮**<br>（同原会话 + `finally`） | 对话删除与存量任务保护<br>(`delete_schedule` + `list_schedules`) | `请调用 delete_schedule 删除定时任务 ID <TASK_ID>，再调用 list_schedules 确认该任务已从列表中移除。` | 删除测试任务并查询确认移除，原有定时任务保持原样 | 1. Langfuse 实录 `delete_schedule` 与 `list_schedules`（已无 `<TASK_ID>`）；<br>2. `/schedule/scheduled` 复核 `data.resultlist` 已无残留且原有任务状态不变 |
+
+- **跨环境执行命令模板**（将 `<ENV_FILE>`、`<LF_ENV>` 与 `<OUT_DIR>` 替换为实际值）：
+  ```bash
+  # 1. 刷新登录态（严禁打印令牌）
+  KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js login --force --json > "<OUT_DIR>/login.json"
+
+  # 2. 第 1~3 轮与第 4 轮在同一交互会话 <THREAD_ID> 中串行调用（推荐用 Python 脚本包入 try...finally 兜底删除）：
+  KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js ask "<TURN_1_PROMPT>" --out "<OUT_DIR>/turn-1" --json
+  KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js ask "<TURN_2_PROMPT>" --session "$THREAD_ID" --out "<OUT_DIR>/turn-2" --json
+  KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js ask "<TURN_3_PROMPT>" --session "$THREAD_ID" --out "<OUT_DIR>/turn-3" --json
+
+  # 3. Step 4 轮询 POST /web/agent/api/v1/schedule/executions 读取 data.resultlist 取得 sched_* 会话，回读消息并用 Langfuse sessionId 核验隔离：
+  KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js messages --session "$SCHED_THREAD_ID" --json > "<OUT_DIR>/sched_messages.json"
+
+  # 4. 第 4 轮对话删除（并在脚本 finally 中兜底调用 POST /web/agent/api/v1/schedule/delete?taskId=$TASK_ID）：
+  KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js ask "<TURN_4_PROMPT>" --session "$THREAD_ID" --out "<OUT_DIR>/turn-4" --json
+  ```
+
+- **通过标准（双口径验收）**：
+  1. **全量工具覆盖**：第 1～4 轮在 Langfuse 中依次成功命中 `create_schedule`、`list_schedules`、`update_schedule_info`、`pause_schedule`、`resume_schedule`、`update_schedule_frequency`、`delete_schedule` 全部 7 个工具。
+  2. **调度触发与指令更新生效**：XXL-JOB 到点执行成功（`status="success"`），`sched_*` 会话准确输出第 2 轮改写后的暗号 `KB-SUITE-SCHED-OK-8848`（非初版文案）。
+  3. **定时会话隔离有效**：Langfuse 中 `<SCHED_THREAD_ID>` 的 `GENERATION.input` 不含 `## 长期记忆索引`，工具列表中不含任何 `memory_*` 与 `*_schedule` 工具。
+  4. **无残留自清理**：第 4 轮删除后 `/schedule/scheduled` `data.resultlist` 不再包含 `<TASK_ID>`，且账号下既有定时任务状态保持原样。
 
 ---
 
