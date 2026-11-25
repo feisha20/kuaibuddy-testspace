@@ -46,7 +46,7 @@ KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js s
 | `#no-redundant-tool` | 历史已有结果时直接推理、不重复调工具 | `CASE-01` | ✅ 已覆盖 |
 | `#sse-stream-followup` | 思考链/正文流式分离与 Followup 追问生成 | `CASE-01` | ✅ 已覆盖 |
 | `#long-memory` | 跨会话长期记忆写入与召回 | `CASE-03` | ✅ 已覆盖 |
-| `#mcp-connector` | 个人/团队 MCP 连接器发现与工具调用 | — | ⬜ 待补充 |
+| `#mcp-connector` | 个人 MCP 连接器安全拦截、发现授权、工具调用与停用闭环（`mcp-connector/*` + 运行时挂载） | `CASE-05` | ✅ 已覆盖 |
 | `#multimodal-file` | 图片、文档等附件入库交付与视觉识图解析（`save_to_library` / `save_image_to_library` / `analyze_image`） | `CASE-04` | ✅ 已覆盖 |
 | `#write-confirm` | 写操作闭环、后端权限/非法目标拦截（如越权或不存在 ID 防护） | `CASE-03` | ✅ 已覆盖 |
 | `#error-fallback` | 工具报错、超时、无效输入等异常兜底与恢复 | `CASE-03` | ✅ 已覆盖 |
@@ -62,7 +62,8 @@ KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js s
 | [CASE-02](#case-02上下文压缩触发与关键信息保真验证) | 上下文压缩触发与关键信息保真验证 | `#context-compaction` `#large-file-read` | P1 | 已验证 |
 | [CASE-03](#case-03跨会话长期记忆闭环与异常越权兜底验证) | 跨会话长期记忆闭环与异常越权兜底验证 | `#long-memory` `#error-fallback` `#write-confirm` | P1 | 已验证 |
 | [CASE-04](#case-04子-agent-派发识图与文件产物交付验证) | 子 Agent 派发、识图与文件产物交付验证 | `#agent-switch` `#multimodal-file` | P1 | 已验证 |
-| *后续新增* | *按 3.1 中 ⬜ 待补充标签逐步设计* | — | — | — |
+| [CASE-05](#case-05个人-mcp-连接器全生命周期与安全边界验证) | 个人 MCP 连接器全生命周期与安全边界验证 | `#mcp-connector` | P1 | 已验证 |
+| *后续扩展* | *当前 14/14 基线标签已全覆盖，后续按需扩展新标签（见 [KB-RELEASE-SMOKE-001.md](KB-RELEASE-SMOKE-001.md)）* | — | — | — |
 
 ---
 
@@ -234,6 +235,50 @@ KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js s
   1. **子 Agent 协作生效**：第 1 轮成功触发 `agent_spawn`（`general-purpose`）并完成文件生成。
   2. **产物入库交付**：`save_image_to_library` 与 `save_to_library` 均成功返回真实 `accessUrl`（未出现沙箱路径泄漏或虚构链接）。
   3. **识图模型闭环**：第 2 轮实际调用 `analyze_image` 且准确识别出图片中的数字 `8848`。
+
+---
+
+### CASE-05：个人 MCP 连接器全生命周期与安全边界验证
+- **覆盖标签**：`#mcp-connector`
+- **测试目标**：验证个人 MCP 连接器从安全准入校验（SSRF 环回 IP / URL 查询参数凭据拦截）、远端工具发现、最小工具授权持久化（`SELECTED`）、对话内前缀挂载与正/负向工具调用（含跨轮 Prompt Cache 稳定性）、停用即时拦截到测试后物理删除自清理的完整闭环。
+- **前置条件与边界说明**：
+  - **测试端点参数化**：默认使用无需外部个人鉴权的公网 MCP 服务 `MCP_TEST_URL=https://api.sondahub.com/mcp`（`STREAMABLE_HTTP`、`auth=NONE`）；若目标环境出站网络无法访问该地址，可替换为等价可达的无鉴权 HTTPS MCP 端点并在当次 Run 中注明。
+  - **登录态刷新**：执行前必须运行 `KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js login --force --json` 刷新目标环境令牌缓存（`.runtime/cache/kuaibuddy-preprod/token.json`），避免跨环境复用旧环境缓存令牌；严禁将令牌写入日志、源码或报告。
+  - **为何不纳入平台/专家级 MCP（`scope=1`）**：平台或专家级 MCP（如 `kicp`、`kst-mcp-online`）强绑定特定 `agent_id` 及租户 `Third-Token` 与外部业务数据，不适合零依赖跨环境基础回归。
+  - **最小授权与防撞名**：临时连接器固定命名为 `kb-suite-case05-mcp`，保存时 `toolAuthorizationMode` 设为 `"SELECTED"` 且 `selectedTools` 仅勾选 `["add", "echo", "fail"]`（**不得**同时传 `excludedTools`，也不要传 `token` / `clientSecret` 否则触发 `8005`），并在提示词中显式指定 `#<CONNECTOR_ID>`，避免与账号下既有连接器冲突。
+  - **强制自清理**：`Step 2 ~ Step 4` 必须在 `try ... finally` 中执行，无论中间成功或报错均执行 `Step 5` 按最新 `revision` 删除临时连接器。
+
+| 阶段 / 轮次 | 场景类型 | 固定输入提示词 / API 操作（执行时保持固定） | 预期交互行为 | 预期观测指标（API + `events.json` + Langfuse `LF_ENV`） |
+| :--- | :--- | :--- | :--- | :--- |
+| **Step 0**<br>（API 负向） | SSRF 环回地址与 URL 鉴权材料拦截 | 调用 `POST /web/agent/api/v1/mcp-connector/test` 分别提交：<br>1）`config.url = "https://127.0.0.1/mcp"`；<br>2）`config.url = "<MCP_TEST_URL>?token=abc"`（均设 `transport: "STREAMABLE_HTTP"`, `auth: "NONE"`, `tokenMode: "BEARER"`, `preserveCredentials: false`） | 两次请求均在服务端前置校验阶段被拒绝，无草稿或连接器落库 | 两次响应业务码均为 **`8004`（`MCP_CONFIG_INVALID`）**（其中 URL 带 `token` 返回「认证材料不能放入服务器 URL」） |
+| **Step 1**<br>（API 正向） | 远端工具发现、最小授权保存与列表核对 | 1）`POST /web/agent/api/v1/mcp-connector/test` 探测 `<MCP_TEST_URL>` 获取 `draftId` 与工具目录；<br>2）`POST /web/agent/api/v1/mcp-connector/save` 创建 `name: "kb-suite-case05-mcp"`，`toolAuthorizationMode: "SELECTED"`，`selectedTools: ["add", "echo", "fail"]`，记录 `CONNECTOR_ID`；<br>3）`GET /web/agent/api/v1/mcp-connector/list` 复核 | 发现远端工具并仅持久化所选 3 个工具，状态为启用且同步成功 | 1. `/test`、`/save`、`/list` 均返回 `code = 8`；<br>2. `enabled = true`、`toolSyncStatus = "SUCCESS"`；<br>3. `tools` 集合严格等于 `["add", "echo", "fail"]`，未勾选工具（如 `whoami`）不在授权列表中 |
+| **Step 2**<br>（会话 A 第 1 轮，新开会话） | 对话内连接器发现、作用域隔离与正向工具调用 | `请使用我的个人 MCP 连接器 #<CONNECTOR_ID>（名称 kb-suite-case05-mcp）对应的工具完成两件事：1）调用 add 工具计算 1234 加 5678；2）调用 echo 工具原样回显文本 KB-SUITE-CASE05-8848。请直接调用对应 MCP 工具并汇报真实返回结果，不要自己口算或编造。` | 识别连接器 `#<CONNECTOR_ID>` 前缀并真实调用 `add` 与 `echo`，汇报结果 | 1. Langfuse `sysPrompt` 含 `工具前缀 personal_mcp_<uuid>__ 属于连接器 #<CONNECTOR_ID>`；<br>2. `GENERATION.input` 包含 `<prefix>__add` 且**不包含**未授权的 `<prefix>__whoami`；<br>3. Langfuse 实录 `<prefix>__add` 与 `<prefix>__echo` 调用成功；<br>4. 回复准确包含 `6912` 与 `KB-SUITE-CASE05-8848` |
+| **Step 3**<br>（会话 A 第 2 轮，同会话） | MCP 工具失败兜底与多连接器缓存稳定性 | `请继续使用同一个个人 MCP 连接器 #<CONNECTOR_ID> 的 fail 工具执行一次调用，并如实汇报工具返回的真实错误结果（不要编造成功，也不要反复重试超过 2 次）。` | 调用 `fail` 工具并如实回报上游错误，不伪造成功、不死循环重试 | 1. Langfuse 实录 `<prefix>__fail` 调用 `1~2` 次且返回错误文本；<br>2. 回复如实说明失败；<br>3. 观察个人 MCP 挂载下第 2 轮 Prompt Cache 命中率保持 **≥ 90%** |
+| **Step 4**<br>（停用 + 会话 B 第 1 轮，**新开会话**） | 连接器停用后运行时隔离与拒绝伪造 | 1）`GET /list` 取最新 `revision`，调 `POST /web/agent/api/v1/mcp-connector/set-enabled` 设 `enabled: false`；<br>2）新开会话发送：`请使用我的个人 MCP 连接器 #<CONNECTOR_ID>（名称 kb-suite-case05-mcp）的 add 工具计算 11 加 22，并汇报工具调用结果；如果该连接器当前不可用或已停用，请直接明确说明，不要自行口算冒充工具调用成功。` | 停用后运行时不再装配 `#<CONNECTOR_ID>` 工具；助手明确反馈连接器已停用/不可用且拒绝伪造调用结果 | 1. Langfuse `sysPrompt` 注入 `连接器 #<CONNECTOR_ID> 已停用，需要此连接器时应明确反馈不可用。`；<br>2. 本轮 **0 次** `<prefix>__*` 工具调用（输入基线 Token 因未装配该连接器工具 Schema 而回落）；<br>3. 回复明确说明连接器不可用/已停用（*注：仅校验未调工具与停用说明，不强校验拒绝理由中的附带示例算术措辞*） |
+| **Step 5**<br>（API 自清理） | 物理删除临时连接器并核验存量无损 | `finally` 中 `GET /list` 获取 `#<CONNECTOR_ID>` 最新 `revision`，调 `POST /web/agent/api/v1/mcp-connector/delete` 删除，并再次调 `GET /list` 核验 | 临时连接器被彻底清除，账号下原有连接器未受任何影响 | 1. `/delete` 返回 `code = 8`；<br>2. 删后 `/list` 中已无 `kb-suite-case05-mcp`（`#<CONNECTOR_ID>`）；<br>3. 执行前已存在的连接器 ID、启停状态与 `revision` 均保持原样 |
+
+- **跨环境执行命令模板**（将 `<ENV_FILE>`、`<LF_ENV>`、`<MCP_TEST_URL>` 与 `<OUT_DIR>` 替换为实际值）：
+  ```bash
+  # 1. 强制刷新目标环境登录态（token 缓存在 .runtime/cache/kuaibuddy-preprod/token.json，严禁打印令牌）
+  KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js login --force --json > "<OUT_DIR>/login.json"
+
+  # 2. 推荐通过 Python 自动化脚本串联 Step 0 ~ Step 5（将 Step 2~4 纳入 try...finally 确保 Step 5 自清理）
+  # 说明：
+  # - 个人 MCP API 统一走 <BASE_URL>/web/agent/api/v1/mcp-connector/{list,test,save,set-enabled,delete}
+  # - Step 2 / Step 3 / Step 4 对话分别调用：
+  #   Turn 1: KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js ask "<TURN_1_PROMPT>" --out "<OUT_DIR>/turn-1" --json
+  #   Turn 2: KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js ask "<TURN_2_PROMPT>" --session "$SESSION_A" --out "<OUT_DIR>/turn-2" --json
+  #   Turn 3: KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js ask "<TURN_3_PROMPT>" --out "<OUT_DIR>/turn-3" --json
+  # - Langfuse <LF_ENV> 核对多步轨迹时，需等待根 AGENT Span 落盘收口（带 endTime）后再统计全部 Step 的 GENERATION 与 TOOL，避免过早轮询漏掉尾随 Span
+  ```
+
+- **通过标准（双口径验收）**：
+  1. **安全准入拦截**：环回 IP 与 URL 查询参数携带 `token` 两次 `/test` 均被拦截并返回 `code = 8004`。
+  2. **发现与最小授权生效**：`/test` 与 `/save`（`SELECTED`）成功，`/list` 及 Langfuse `GENERATION.input` 仅包含已选工具（`add`/`echo`/`fail`），未勾选工具（如 `whoami`）不可见。
+  3. **对话调用闭环**：Turn 1 在 Langfuse 成功记录 `<prefix>__add` 与 `<prefix>__echo` 调用，回复准确包含 `6912` 与 `KB-SUITE-CASE05-8848`。
+  4. **异常兜底与缓存稳定**：Turn 2 实际调用 `<prefix>__fail`（不超过 2 次）并如实报错，不编造成功；同时跨轮 Prompt Cache 命中率稳定达标（**≥ 90%**）。
+  5. **停用即时隔离**：Turn 3 的 Langfuse `sysPrompt` 注入停用提示、`<prefix>__*` 工具调用次数为 `0`，回复明确反馈连接器不可用。
+  6. **无残留自清理**：Step 5 删除后 `/list` 不再包含 `kb-suite-case05-mcp`，原有连接器全部完好保留。
 
 ---
 
