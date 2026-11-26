@@ -60,6 +60,8 @@ KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js s
 | `#tool-result-eviction` | 大体积工具输出自动卸载预览与命令行超时预算前置拦截（`requireShellBudget`） | `CASE-07` | ✅ 已覆盖 |
 | `#run-control` | SSE 断连不断执行（`/run/active` + `/run/observe` 全量重放续接）、同会话并发 `4006` 拦截、`/run/cancel` 真实中断（无后台写入泄漏、防会话锁死） | `CASE-08` | ✅ 已覆盖 |
 | `#points-billing` | 积分账户余额扣减、SSE `usage`、轮次消费状态（`SUCCEEDED`/`CANCELLED`）、逐笔明细幂等与并发被拒零计费四方对账 | `CASE-08` | ✅ 已覆盖 |
+| `#user-skill-crud` | 个人 Skill 包校验与全局重名拦截（`4102`/`4104`）、对话创建与内置技能隔离（`save_skill` / `query_skill`）、跨会话静默加载（`<name>_import`）、同名覆盖、ZIP 导出与启停删除闭环 | `CASE-09` | ✅ 已覆盖 |
+| `#image-gen` | AI 文生图（`text_to_image`）、链式图生图（`image_to_image`）、自动积分结算与永久入库（免调 `save_image_to_library`）、任务附件发现（`list_attachments`）及文件库／COS 物理删除（删后 `404`）闭环 | `CASE-10` | ✅ 已覆盖 |
 
 ### 3.2 测试用例索引
 
@@ -73,6 +75,8 @@ KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js s
 | [CASE-06](#case-06定时任务全生命周期管理与触发隔离验证) | 定时任务全生命周期管理与触发隔离验证 | `#scheduled-task` | P1 | 已验证 |
 | [CASE-07](#case-07框架文件检索任务规划联网抓取与大输出卸载验证) | 框架文件检索、任务规划、联网抓取与大输出卸载验证 | `#fs-code-tools` `#web-fetch` `#todo-plan` `#tool-result-eviction` | P1 | 已验证 |
 | [CASE-08](#case-08运行态控制断连重连并发拦截真中断与积分计费对账验证) | 运行态控制（断连重连／并发拦截／真中断）与积分计费对账验证 | `#run-control` `#points-billing` | P1 | 已验证 |
+| [CASE-09](#case-09个人-skill-全生命周期与隔离边界验证) | 个人 Skill 全生命周期与隔离边界验证 | `#user-skill-crud` | P1 | 已验证 |
+| [CASE-10](#case-10ai-图像生成自动入库与任务附件发现验证) | AI 图像生成自动入库与任务附件发现验证 | `#image-gen` | P1 | 已验证 |
 | *后续扩展* | *核心底座按需扩展中（其余专项见 [KB-RELEASE-SMOKE-001.md](KB-RELEASE-SMOKE-001.md)）* | — | — | — |
 
 ---
@@ -412,6 +416,82 @@ KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js s
   4. **取消不锁会话（防 `#92963`）**：Step 3 紧接取消后立即同会话发起可正常回复 `未生成且会话正常`，无 `4006`/`4050` 卡死。
   5. **账本四方精确一致**：`/points/account` 净扣减与今日增量、`CUSTOM(usage)`（正常完结轮）、`/points/consumptions`（含 `SUCCEEDED` 与 `CANCELLED`）、`/points/records`（单 `CONSUME` 幂等 + `DEDUCT` 扣款与有效调用+追问次数匹配）金额完全闭合。
   6. **异常请求零误扣**：被 `4006` 拒绝的 `RUN_4006` 在 `/points/consumptions`、`/points/records` 与 Langfuse `LF_ENV` 均为 `0` 条记录。
+
+---
+
+### CASE-09：个人 Skill 全生命周期与隔离边界验证
+- **覆盖标签**：`#user-skill-crud`
+- **测试目标**：验证个人 Skill（`scope=3`）从 HTTP 包校验与全局重名拦截（`4102`/`4104`）、对话内创建／查询／ZIP 导出（`save_skill` / `query_skill`）、内置全局 Skill 读取隔离、跨会话动态加载生效、同名覆盖更新、Web 启停实时可见性隔离到安全自清理的完整闭环。
+- **前置条件与已校准口径**：
+  - **零外部依赖**：全环境内置 `write_file`、`save_skill`、`query_skill` 与 Web Skill 接口，仅要求技能广场存在至少 1 个全局 Skill（通过 `POST /web/agent/api/v1/skill/hub/list` 动态选取首个可用名称记为 `<GLOBAL_SKILL>`，禁止写死特定技能名称）。
+  - **动态随机命名**：每次执行生成唯一名称 `<SKILL_NAME> = kb-suite-09-<6位十六进制>`（长度 `18 <= 30` 字上限，说明不超过 `120` 字），避免并发或历史残留撞名。
+  - **隔离报错文本与静默加载口径（预生产实测校准）**：
+    1. 对话内调用 `query_skill(name="<GLOBAL_SKILL>")` 时，工具返回原文为 **`Error: Tool execution failed: Skill 不存在`**（不会在文本中打印 `"4004"` 数字码，且 Langfuse Span `level` 仍为 `"DEFAULT"`）；断言须匹配包含 **`Skill 不存在`**。
+    2. 新会话传入 `skillNames: ["<SKILL_NAME>"]` 激活个人 Skill 时，框架调用的 `load_skill_through_path` 属于静默工具（SSE 无 `TOOL_CALL_START` 事件），须在 Langfuse `LF_ENV` 中核验命中 **`load_skill_through_path(skillId="<SKILL_NAME>_import", path="SKILL.md")`**（`Source: import`）。
+    3. Web 导出接口 `POST /web/agent/api/v1/skill/userExport` 返回 ZIP 的 Base64 字段名为 **`zipBase64`**。
+  - **防“软删停用复活”陷阱与强清理**：`AgentSkillStore.overwriteExisting` 复活同名软删行时会沿用旧行的 `status`。脚本必须在 `try ... finally` 中执行：先在 Step 4 验证 `userDisable` → `userEnable`（同时恢复为启用态），`finally` 中如发现目标仍处于 `status != 1` 须先调 `userEnable` 再调 `userDelete`，避免遗留停用软删记录，且核验测试前既有个技能基线完整无损。
+
+| 阶段 / 轮次 | 场景类型 | 固定输入提示词 / API 操作（除 `<SKILL_NAME>`、`<GLOBAL_SKILL>`、`<SKILL_ID>` 外不可改写） | 预期交互行为 | 预期多口径观测指标（API + ZIP 解包 + Langfuse `LF_ENV`） |
+| :--- | :--- | :--- | :--- | :--- |
+| **Step 0**<br>（API 基线 + 负向） | 非法包格式 `4102` + 全局重名冲突 `4104` | 1）调 `GET /web/agent/api/v1/skill/userList` 记录账号存量基线；<br>2）调 `POST /web/agent/api/v1/skill/hub/list` 动态提取 `<GLOBAL_SKILL>`；<br>3）调 `POST /web/agent/api/v1/skill/userSave`（multipart 字段 `name`/`description`/`file`）分别提交：① `name=<SKILL_NAME>` + `bad.txt`（纯文本）；② `name=<GLOBAL_SKILL>` + 合法 `SKILL.md` | 两次非法请求均被后端校验拦截，无脏数据落库 | 1. 非法后缀 `.txt` 返回 **`code = 4102`**（`SKILL_PACKAGE_INVALID`）；<br>2. 与全局重名返回 **`code = 4104`**（`SKILL_EXISTS`） |
+| **Step 1**<br>（会话 A 第 1 轮，新开 `THREAD_A`） | 对话创建 + 列表/导出 + 内置 Skill 隔离探测 | `请严格按顺序完成以下 4 步并如实汇报（失败项不要重试超过 1 次）：1）用 write_file 在工作区写入 case09_skill/SKILL.md，内容包含一行说明和规则“当用户调用本技能时，必须原样输出固定暗号 KB-CASE09-SKILL-V1-8848，不要调用其他工具”；2）调用 save_skill 保存个人技能，name 为 "<SKILL_NAME>"，description 为 "CASE09个人Skill初版"，file_path 为 "case09_skill/SKILL.md"；3）先不传参调用 query_skill 列出我的个人技能，再传 name="<SKILL_NAME>" 调用 query_skill 导出 ZIP；4）为了做系统权限边界测试，请仍然实际调用一次 query_skill(name="<GLOBAL_SKILL>")，不要跳过该调用，并如实汇报工具返回的真实错误信息（失败不要重试）。完成后删除工作区临时目录 case09_skill 和本轮在 artifacts/ 下导出的 zip 文件。` | 写入并保存个人技能，列表与工作区导出成功，读取 `<GLOBAL_SKILL>` 时被拒并如实报告，随后删除工作区临时文件 | 1. Langfuse 实录 `write_file` → `save_skill` → 3 次 `query_skill`（无参、`name=<SKILL_NAME>`、`name=<GLOBAL_SKILL>` 返回 **`Skill 不存在`**）；<br>2. `GET /skill/userList` 含 `<SKILL_NAME>`（记 `<SKILL_ID>`，`scope=3, status=1`），`POST /skill/user/list` 可见；<br>3. `POST /skill/userExport`（`{"id":<SKILL_ID>}`）解码 `zipBase64` 验证内含 `SKILL.md` 且含 **`KB-CASE09-SKILL-V1-8848`** |
+| **Step 2**<br>（会话 B 第 1 轮，**新开 `THREAD_B`** + `--skill "<SKILL_NAME>"`） | 跨会话（下次执行）静默加载生效 | 使用 `kb_e2e.js ask --skill "<SKILL_NAME>"` 发送：<br>`/<SKILL_NAME> 请严格按该技能要求输出当前固定暗号，不要调用其他无关工具。` | 新会话动态加载个人 Skill 并按 V1 规则输出暗号 | 1. Langfuse 实录 **`load_skill_through_path(skillId="<SKILL_NAME>_import", path="SKILL.md")`**（注：SSE 无工具事件属静默正常现象）；<br>2. 最终回复准确包含 **`KB-CASE09-SKILL-V1-8848`** |
+| **Step 3**<br>（会话 B 第 2 轮，复用 `THREAD_B`） | 同名覆盖（Upsert V2）与防残留清理 | `请修改我的个人技能 "<SKILL_NAME>"：先用 write_file 写入 case09_skill_v2/SKILL.md，将固定暗号改为 "KB-CASE09-SKILL-V2-9966"；再调用 save_skill 以相同 name="<SKILL_NAME>"、description="CASE09个人Skill覆盖V2"、file_path="case09_skill_v2/SKILL.md" 覆盖保存；保存成功后删除工作区临时目录 case09_skill_v2 并回报技能 id。注意不要额外调用 query_skill 导出 ZIP（如已导出 artifacts/*.zip 请一并删除）。` | 原地覆盖正文与说明，技能 ID 与启用状态保持不变，临时文件全部清理 | 1. Langfuse 实录 `write_file` 与 `save_skill` 成功；<br>2. `GET /skill/userList` 保持同一 `<SKILL_ID>`、`status=1`、`description="CASE09个人Skill覆盖V2"`；<br>3. `POST /skill/userExport` 解码 `zipBase64` 确认 `SKILL.md` 已更新为 **`KB-CASE09-SKILL-V2-9966`**（不含 V1） |
+| **Step 4**<br>（API 启停隔离 + `finally` 删除） | 停用隔离 → 启用恢复 → 物理删除与存量核验 | 1）`POST /web/agent/api/v1/skill/userDisable`（`{"id":<SKILL_ID>}`）→ 复查 `/skill/userList` 与 `/skill/user/list`；<br>2）`POST /web/agent/api/v1/skill/userEnable`（`{"id":<SKILL_ID>}`）→ 复查 `/skill/userList` 与 `/skill/user/list`；<br>3）`finally` 中调用 `POST /web/agent/api/v1/skill/userDelete`（`{"id":<SKILL_ID>}`）并复查基线 | 停用后运行时立即可见列表剔除，启用后恢复，删除后无残留且存量完好 | 1. `userDisable` 后 `/skill/userList` `status=0` 且 `/skill/user/list` **不含** `<SKILL_NAME>`；<br>2. `userEnable` 后恢复 `status=1` 且 `/skill/user/list` **恢复包含**；<br>3. `userDelete` 后两个列表均不含 `<SKILL_NAME>`，既有个人 Skill 与 Step 0 基线一致 |
+
+- **跨环境执行命令模板**（将 `<ENV_FILE>`、`<LF_ENV>` 与 `<OUT_DIR>` 替换为实际值）：
+  ```bash
+  # 1. 刷新目标环境登录态（token 缓存在 .runtime/cache/kuaibuddy-preprod/token.json，严禁打印令牌）
+  KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js login --force --json > "<OUT_DIR>/login.json"
+
+  # 2. 推荐通过 Python 自动化脚本串联 Step 0 ~ Step 4（纳入 try...finally 确保先启用后删除）
+  # - Skill Web 接口：<BASE_URL>/web/agent/api/v1/skill/{userList,hub/list,userSave,user/list,userExport,userDisable,userEnable,userDelete}
+  # - 对话轮次（Step 1 / Step 2 / Step 3）：
+  #   Turn 1: KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js ask "<STEP_1_PROMPT>" --out "<OUT_DIR>/turn-1" --json
+  #   Turn 2: KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js ask "<STEP_2_PROMPT>" --skill "$SKILL_NAME" --out "<OUT_DIR>/turn-2" --json
+  #   Turn 3: KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js ask "<STEP_3_PROMPT>" --session "$THREAD_B" --out "<OUT_DIR>/turn-3" --json
+  ```
+
+- **通过标准（多口径验收）**：
+  1. **负向准入拦截**：`/skill/userSave` 非法 `.txt` 返回 `4102`，与全局 Skill 重名返回 `4104`。
+  2. **对话创建与隔离**：Step 1 在 Langfuse 命中 `write_file`、`save_skill`、`query_skill`（列表、导出、全局隔离返回 `Skill 不存在`）；Web `/skill/userExport` 解包含 V1 暗号。
+  3. **跨会话静默加载生效**：Step 2 新会话在 Langfuse 命中 `load_skill_through_path(skillId="<SKILL_NAME>_import")` 且回复准确输出 `KB-CASE09-SKILL-V1-8848`。
+  4. **同名覆盖保留身份**：Step 3 覆盖后保持同一 `<SKILL_ID>` 与 `status=1`，导出包内容已更新为 `KB-CASE09-SKILL-V2-9966`。
+  5. **启停隔离与无损清理**：`userDisable` 运行时剔除、`userEnable` 恢复、`userDelete` 彻底清除且账号既有个人 Skill 完全无损。
+
+---
+
+### CASE-10：AI 图像生成自动入库与任务附件发现验证
+- **覆盖标签**：`#image-gen`
+- **测试目标**：验证 `text_to_image`（文生图）与 `image_to_image`（基于前图 URL 链式参考图生图）结合 `ImageGenPostProcessor` 自动积分结算与永久 COS 入库（无需再调用 `save_image_to_library`）、`list_attachments` 任务附件发现，以及 `/library/delete` 同时软删数据库记录与物理删除 COS 对象（删后 `HTTP 404`）的端到端闭环。
+- **前置条件与已校准口径**：
+  - **生图配置与积分门槛**：要求目标环境已配置可用 `text-to-image` 模型候选池及 COS 存储，且账号积分余额 **`> 150`**。预生产实测单张 `K1`/`R_1_1` 生图后处理固定触发 1 笔 **`-61.73`** 积分 `DEDUCT`（加上每轮推理与追问建议，2 轮生图总消耗约 **`125～130`** 积分）。
+  - **规格与自动入库防重调约束**：两轮均固定最小规格 `count=1`、`resolution="K1"`、`aspect_ratio="R_1_1"`；`ImageGenTool` 返回永久 `accessUrl` 与 `attachmentId`，提示词显式要求**不调用 `save_image_to_library`**，并在 Langfuse 验证调用次数为 `0`。
+  - **附件类别与文件库字段差异**：`list_attachments` 工具入参 `file_category` 枚举为大写 **`IMAGE`**；Web 接口 `POST /web/agent/api/v1/library/list-by-session` 返回的 `LibraryItemVO` 中 `fileCategory` 为小写 **`"image"`**、`source` 为 **`"agent"`**、`taskRole` 为 **`"ARTIFACT"`**。
+  - **证据留存与删后 `404` 说明**：`LibraryServiceImpl.delete` 会同步物理删除 COS 对象；清理完成后历史会话文本里保留的原链接访问 `HTTP 404` 属正常清理结果。建议在 `Step 3` 删除前先将直连 GET `200` 的两张图片二进制顺手保存至 `<OUT_DIR>/case10_t2i.png` 与 `<OUT_DIR>/case10_i2i.png` 供人工按需查看成像。
+
+| 阶段 / 轮次 | 场景类型 | 固定输入提示词 / API 操作 | 预期交互行为 | 预期多口径观测指标（HTTP + 文件库 + 积分 + Langfuse `LF_ENV`） |
+| :--- | :--- | :--- | :--- | :--- |
+| **Step 1**<br>（会话 A 第 1 轮，新开 `THREAD_A`） | 文生图 + 自动永久入库（免调 `save_image_to_library`） | `请调用 text_to_image 生成 1 张极简测试图：内容为纯深蓝色背景正中央一颗清晰白色五角星；参数固定为 title="CASE10文生图测试"、file_name="case10_t2i.png"、count=1、resolution="K1"、aspect_ratio="R_1_1"。注意图片已自动入库，不要调用 save_image_to_library，完成后请原样返回 attachmentId 和 accessUrl。` | 调用 `text_to_image` 生成 1 张图，直接返回真实 `attachmentId`（记 `ATT_1`）与永久 `accessUrl`（记 `URL_1`） | 1. Langfuse 实录 `text_to_image` 成功，**`save_image_to_library == 0`**；<br>2. 对 `URL_1` 直连 GET 返回 **`HTTP 200`**、`Content-Type: image/*`、体积 `> 0`（PNG 头 `89504e470d0a1a0a`，保存本地备份）；<br>3. `/library/list-by-session` 含 `ATT_1`；`/points/records` 含生图独立 `DEDUCT` 扣费 |
+| **Step 2**<br>（会话 A 第 2 轮，复用 `THREAD_A`） | 链式图生图 + 任务附件发现（`list_attachments`） | `请依次完成两件事：1）调用 image_to_image，以你上一轮返回的 accessUrl 作为 image_urls（仅传这 1 张参考图），将背景改为温暖日落橙色并保留中央白色五角星，参数固定为 title="CASE10图生图测试"、file_name="case10_i2i.png"、count=1、resolution="K1"、aspect_ratio="R_1_1"（不要调用 save_image_to_library）；2）生成完成后立即调用 list_attachments（file_category 选 IMAGE）列出本会话全部图片附件，并原样汇报两张图的 attachmentId 与 accessUrl。` | 以 `URL_1` 为唯一参考图生成 `ATT_2` / `URL_2`，再调 `list_attachments` 枚举当前会话两张图片并完整回报 | 1. Langfuse 实录 `image_to_image`（入参 `image_urls` 准确含 `URL_1`）与 `list_attachments(file_category="IMAGE")` 均成功，**`save_image_to_library == 0`**；<br>2. `URL_2` 直连 GET 返回 **`HTTP 200`**、`image/*`、体积 `> 0`（与 `URL_1` 不同，保存本地备份）；<br>3. `/library/list-by-session` 包含 `ATT_1` 与 `ATT_2`（均 `fileCategory="image"`, `source="agent"`, `fileSize > 0`）；`/points/records` 含 `DEDUCT` |
+| **Step 3**<br>（API 自清理，`finally`） | 文件库 + COS 物理删除闭环验证 | 1）对 `ATT_1`、`ATT_2` 调用 `POST /web/agent/api/v1/library/delete`（`{"attachmentId":"<ID>"}`）；<br>2）复查 `POST /web/agent/api/v1/library/list-by-session`；<br>3）再次对 `URL_1` 与 `URL_2` 发 HTTP GET | 文件库与底层 COS 对象均被清除 | 1. 两次 `/library/delete` 均返回 `code = 8`；<br>2. `/library/list-by-session` 返回空列表 `[]`；<br>3. 复测 `URL_1` 与 `URL_2` 均返回 **`HTTP 404`**（验证 COS 已物理清理） |
+
+- **跨环境执行命令模板**（将 `<ENV_FILE>`、`<LF_ENV>` 与 `<OUT_DIR>` 替换为实际值）：
+  ```bash
+  # 1. 刷新目标环境登录态（token 缓存在 .runtime/cache/kuaibuddy-preprod/token.json，严禁打印令牌）
+  KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js login --force --json > "<OUT_DIR>/login.json"
+
+  # 2. 通过 Python 自动化脚本串联 Step 1 ~ Step 3（纳入 try...finally 兜底删图与删后 404 校验）：
+  # - Turn 1: KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js ask "<STEP_1_PROMPT>" --out "<OUT_DIR>/turn-1" --json
+  # - Turn 2: KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js ask "<STEP_2_PROMPT>" --session "$THREAD_A" --out "<OUT_DIR>/turn-2" --json
+  # - 文件库与积分核验：<BASE_URL>/web/agent/api/v1/library/{list-by-session,delete}、/web/agent/api/v1/points/records
+  ```
+
+- **通过标准（多口径验收）**：
+  1. **文生图与图生图链式生效**：两轮分别在 Langfuse 命中 `text_to_image` 与 `image_to_image`（`image_urls` 精准传递 `URL_1`），两张图片均可直连 `HTTP 200` 读取有效图片字节。
+  2. **自动入库免重复保存**：两轮 Langfuse 轨迹中 `save_image_to_library` 均为 **`0`** 次，且 `/library/list-by-session` 与 `list_attachments` 均返回全部 `2` 条 `agent` 图片产物。
+  3. **积分独立扣费入账**：`/points/records` 在 `RUN_1` 与 `RUN_2` 下均准确记录生图 `DEDUCT` 扣费明细与汇总 `CONSUME`。
+  4. **文件库与 COS 双清闭环**：Step 3 `/library/delete` 后 `/library/list-by-session` 为空 `[]`，且原 `URL_1`/`URL_2` 复测返回 `HTTP 404`。
 
 ---
 
