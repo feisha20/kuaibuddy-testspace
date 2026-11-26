@@ -112,4 +112,34 @@
 - 最近核对日期：2026-11-25
 - 失效条件或复核提示：`ego-browser` 升级并变更 `page.screenshot()` 返回值类型时复核
 
+## K-008：个人 Skill 软删复活沿用旧状态陷阱、隔离报错原文及 `_import` 静默加载口径
+- 类型：排查经验／测试策略
+- 验证状态：已确认（源码核查＋预生产实测）
+- 适用模块与版本：`web-agent`（`AgentSkillStore.java`、`AgentSkillServiceImpl.java`）、`service-agent`（`UserSkillTool.java`），`beta` 分支及预生产当前部署
+- 适用条件：涉及个人 Skill（`scope=3`）创建、覆盖、启停、删除自清理及跨会话触发加载验证的场景
+- 结论或建议：
+  1. **防软删停用复活**：`AgentSkillStore.findOwned` 查同名个人 Skill 包含软删行（`deleted=1`），`overwriteExisting` 复活时会沿用旧行的 `status`。若先 `userDisable`（`status=0`）后直接 `userDelete`，后续同名保存会复活为停用态。自动化测试须采用随机短名，且 `finally` 清理前若 `status != 1` 须先 `userEnable` 再 `userDelete`。
+  2. **内置技能隔离报错原文**：对话内 `query_skill` 查询全局内置 Skill 时返回 `Error: Tool execution failed: Skill 不存在`（不含 `"4004"` 数字码，Langfuse Span `level="DEFAULT"`），自动化断言应匹配 `Skill 不存在`。
+  3. **运行时 `_import` 静默加载**：个人 Skill 在新会话触发时，沿用 `K-003` 静默机制不透出 SSE `TOOL_CALL_START`，须在 Langfuse 中核验 `load_skill_through_path(skillId="<name>_import", path="SKILL.md")`；Web 导出 `/skill/userExport` 的 ZIP Base64 字段名为 `zipBase64`。
+- 依据：`web-agent` `AgentSkillStore.java#L108-L150`、`SkillExportVO.java#L9-L12`、`service-agent` `UserSkillTool.java#L29-L71`；2026-11-26 预生产 `CASE-09` 全链路实测脱敏结论（`bad.txt` 返回 `4102`、全局重名返回 `4104`、新会话 Langfuse 命中 `<name>_import`、启停删除闭环通过）
+- 关联任务／用例：[KB-SUITE-001.md](../tests/cases/KB-SUITE-001.md)（`CASE-09`）
+- 确认人：用户确认沉淀（2026-11-26）
+- 最近核对日期：2026-11-26
+- 失效条件或复核提示：`AgentSkillStore.overwriteExisting` 状态沿用策略、个人 Skill 运行时 `skillId` 命名或 `ToolName.SILENT_TOOL_KEYS` 调整时复核
+
+## K-009：AI 生图工具自动入库免二次保存、单张 K1 计费参考及文件库删后 COS 404 机制
+- 类型：排查经验／测试策略
+- 验证状态：已确认（源码核查＋预生产实测）
+- 适用模块与版本：`service-agent`（`ImageGenTool.java`、`ImageGenPostProcessor.java`）、`web-agent`（`LibraryServiceImpl.java`），`beta` 分支及预生产当前部署
+- 适用条件：涉及 `text_to_image` / `image_to_image` 生图测试、积分配额预估及文件库清理后的链接访问核查场景
+- 结论或建议：
+  1. **自动结算与入库**：`ImageGenPostProcessor.settleAndPersist` 在生图成功后自动触发积分扣减与永久 COS 入库并返回 `accessUrl`，工具契约要求无需再调用 `save_image_to_library`（回归校验其调用次数为 `0`）。
+  2. **生图积分基线**：预生产实测单张最小规格（`count=1, resolution="K1", aspect_ratio="R_1_1"`）文生图与图生图均固定触发 1 笔独立 `-61.73` 积分 `DEDUCT`（两轮含推理共耗约 `125` 积分），含生图的回归测试建议账号余额门槛 `> 150` 积分。
+  3. **文件库删除联动物理删 COS**：`LibraryServiceImpl.delete` 软删数据库记录后会紧接执行 `cosUtils.delete(a.getOssPath())` 物理删除 COS 对象；因此自清理完成后，原 `accessUrl` 返回 `HTTP 404` 属正常清理结果（历史聊天文本中遗留的链接会显示裂图，并非生图失败）；如需保留样图人工目视检查，应在清理前下载至本地 Run `artifacts/`。
+- 依据：`service-agent` `ImageGenTool.java#L30-L85`、`ImageGenPostProcessor.java#L32-L39`、`web-agent` `LibraryServiceImpl.java#L83-L106`；2026-11-26 预生产 `CASE-10` 实测脱敏结论（清理前两图直连 `HTTP 200` `image/png`，清理后文件库为空且原 COS 链接均返 `HTTP 404`）
+- 关联任务／用例：[KB-SUITE-001.md](../tests/cases/KB-SUITE-001.md)（`CASE-10`）
+- 确认人：用户确认沉淀（2026-11-26）
+- 最近核对日期：2026-11-26
+- 失效条件或复核提示：生图模型候选池／积分定价调整，或 `LibraryServiceImpl.delete` 改为延迟异步清理 COS 时复核
+
 其他成员无法直接访问本机 `.runtime/`。用于共享知识的关键依据应提供脱敏摘要或受控归档引用；失效条目保留编号并标记失效及替代条目。
