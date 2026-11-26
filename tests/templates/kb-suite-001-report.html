@@ -1,0 +1,2802 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light dark" />
+  <script>
+    try {
+      var savedScheme = localStorage.getItem("kb-report-color-scheme");
+      if (savedScheme === "light" || savedScheme === "dark") {
+        document.querySelector('meta[name="color-scheme"]').content = savedScheme;
+      }
+    } catch (_) {}
+  </script>
+  <title>KB-SUITE-001 · KuaiBuddy 多环境通用回归报告</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+
+      /* Light base tokens aligned with ui-kuai-buddy/src/styles/tokens.css */
+      --l-bg: #fbfbfa;
+      --l-bg-subtle: #f4f5f7;
+      --l-surface: #ffffff;
+      --l-surface-muted: #f8fafc;
+      --l-hover: rgba(23, 32, 51, 0.045);
+      --l-text-strong: #172033;
+      --l-text: #344155;
+      --l-text-sec: #667085;
+      --l-text-muted: #778398;
+      --l-border: #e5eaf1;
+      --l-border-strong: #cfd8e4;
+      --l-brand: #007cef;
+      --l-brand-hover: #0062bf;
+      --l-brand-soft: rgba(0, 124, 239, 0.09);
+      --l-brand-border: rgba(0, 124, 239, 0.28);
+      --l-ok: #15803d;
+      --l-ok-bg: #ecfdf3;
+      --l-ok-border: #bbf7d0;
+      --l-fail: #c83232;
+      --l-fail-bg: #fff1f0;
+      --l-fail-border: #fecaca;
+      --l-block: #b45309;
+      --l-block-bg: #fffbeb;
+      --l-block-border: #f6d58a;
+      --l-notrun: #64748b;
+      --l-notrun-bg: #f1f5f9;
+      --l-notrun-border: #cbd5e1;
+      --l-radar-grid: #e2e8f0;
+      --l-scroll-track: #f1f5f9;
+      --l-scroll-thumb: #94a3b8;
+
+      /* Dark tokens aligned with ui-kuai-buddy html.dark-mode */
+      --d-bg: #141414;
+      --d-bg-subtle: #1a1a1a;
+      --d-surface: #1f1f1f;
+      --d-surface-muted: #262626;
+      --d-hover: rgba(255, 255, 255, 0.08);
+      --d-text-strong: rgba(255, 255, 255, 0.95);
+      --d-text: rgba(255, 255, 255, 0.85);
+      --d-text-sec: rgba(255, 255, 255, 0.66);
+      --d-text-muted: rgba(255, 255, 255, 0.48);
+      --d-border: rgba(255, 255, 255, 0.11);
+      --d-border-strong: rgba(255, 255, 255, 0.19);
+      --d-brand: #4da3ff;
+      --d-brand-hover: #70b7ff;
+      --d-brand-soft: rgba(77, 163, 255, 0.14);
+      --d-brand-border: rgba(77, 163, 255, 0.36);
+      --d-ok: #4ade80;
+      --d-ok-bg: rgba(22, 134, 80, 0.22);
+      --d-ok-border: rgba(74, 222, 128, 0.36);
+      --d-fail: #f87171;
+      --d-fail-bg: rgba(210, 73, 73, 0.22);
+      --d-fail-border: rgba(248, 113, 113, 0.38);
+      --d-block: #f6c453;
+      --d-block-bg: rgba(180, 83, 9, 0.24);
+      --d-block-border: rgba(246, 196, 83, 0.42);
+      --d-notrun: #94a3b8;
+      --d-notrun-bg: rgba(148, 163, 184, 0.14);
+      --d-notrun-border: rgba(148, 163, 184, 0.28);
+      --d-radar-grid: rgba(255, 255, 255, 0.13);
+      --d-scroll-track: #1d1d1d;
+      --d-scroll-thumb: #64748b;
+
+      /* Active resolved tokens (default light + @media fallback + light-dark modern path) */
+      --kb-bg: var(--l-bg);
+      --kb-bg-subtle: var(--l-bg-subtle);
+      --kb-surface: var(--l-surface);
+      --kb-surface-muted: var(--l-surface-muted);
+      --kb-hover: var(--l-hover);
+      --kb-text-strong: var(--l-text-strong);
+      --kb-text: var(--l-text);
+      --kb-text-sec: var(--l-text-sec);
+      --kb-text-muted: var(--l-text-muted);
+      --kb-border: var(--l-border);
+      --kb-border-strong: var(--l-border-strong);
+      --kb-brand: var(--l-brand);
+      --kb-brand-hover: var(--l-brand-hover);
+      --kb-brand-soft: var(--l-brand-soft);
+      --kb-brand-border: var(--l-brand-border);
+      --kb-ok: var(--l-ok);
+      --kb-ok-bg: var(--l-ok-bg);
+      --kb-ok-border: var(--l-ok-border);
+      --kb-fail: var(--l-fail);
+      --kb-fail-bg: var(--l-fail-bg);
+      --kb-fail-border: var(--l-fail-border);
+      --kb-block: var(--l-block);
+      --kb-block-bg: var(--l-block-bg);
+      --kb-block-border: var(--l-block-border);
+      --kb-notrun: var(--l-notrun);
+      --kb-notrun-bg: var(--l-notrun-bg);
+      --kb-notrun-border: var(--l-notrun-border);
+      --kb-radar-grid: var(--l-radar-grid);
+      --kb-scroll-track: var(--l-scroll-track);
+      --kb-scroll-thumb: var(--l-scroll-thumb);
+
+      --kb-radius-lg: 14px;
+      --kb-radius-md: 10px;
+      --kb-radius-sm: 6px;
+      --kb-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
+      --kb-shadow-overlay: 0 18px 42px rgba(15, 23, 42, 0.16);
+      --kb-font-sans: "PingFang SC", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --kb-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+      &:has(> head > meta[name="color-scheme"][content="dark"]) {
+        color-scheme: dark;
+      }
+      &:has(> head > meta[name="color-scheme"][content="light"]) {
+        color-scheme: light;
+      }
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --kb-bg: var(--d-bg);
+        --kb-bg-subtle: var(--d-bg-subtle);
+        --kb-surface: var(--d-surface);
+        --kb-surface-muted: var(--d-surface-muted);
+        --kb-hover: var(--d-hover);
+        --kb-text-strong: var(--d-text-strong);
+        --kb-text: var(--d-text);
+        --kb-text-sec: var(--d-text-sec);
+        --kb-text-muted: var(--d-text-muted);
+        --kb-border: var(--d-border);
+        --kb-border-strong: var(--d-border-strong);
+        --kb-brand: var(--d-brand);
+        --kb-brand-hover: var(--d-brand-hover);
+        --kb-brand-soft: var(--d-brand-soft);
+        --kb-brand-border: var(--d-brand-border);
+        --kb-ok: var(--d-ok);
+        --kb-ok-bg: var(--d-ok-bg);
+        --kb-ok-border: var(--d-ok-border);
+        --kb-fail: var(--d-fail);
+        --kb-fail-bg: var(--d-fail-bg);
+        --kb-fail-border: var(--d-fail-border);
+        --kb-block: var(--d-block);
+        --kb-block-bg: var(--d-block-bg);
+        --kb-block-border: var(--d-block-border);
+        --kb-notrun: var(--d-notrun);
+        --kb-notrun-bg: var(--d-notrun-bg);
+        --kb-notrun-border: var(--d-notrun-border);
+        --kb-radar-grid: var(--d-radar-grid);
+        --kb-scroll-track: var(--d-scroll-track);
+        --kb-scroll-thumb: var(--d-scroll-thumb);
+      }
+    }
+
+    @supports (color: light-dark(white, black)) {
+      :root {
+        --kb-bg: light-dark(var(--l-bg), var(--d-bg));
+        --kb-bg-subtle: light-dark(var(--l-bg-subtle), var(--d-bg-subtle));
+        --kb-surface: light-dark(var(--l-surface), var(--d-surface));
+        --kb-surface-muted: light-dark(var(--l-surface-muted), var(--d-surface-muted));
+        --kb-hover: light-dark(var(--l-hover), var(--d-hover));
+        --kb-text-strong: light-dark(var(--l-text-strong), var(--d-text-strong));
+        --kb-text: light-dark(var(--l-text), var(--d-text));
+        --kb-text-sec: light-dark(var(--l-text-sec), var(--d-text-sec));
+        --kb-text-muted: light-dark(var(--l-text-muted), var(--d-text-muted));
+        --kb-border: light-dark(var(--l-border), var(--d-border));
+        --kb-border-strong: light-dark(var(--l-border-strong), var(--d-border-strong));
+        --kb-brand: light-dark(var(--l-brand), var(--d-brand));
+        --kb-brand-hover: light-dark(var(--l-brand-hover), var(--d-brand-hover));
+        --kb-brand-soft: light-dark(var(--l-brand-soft), var(--d-brand-soft));
+        --kb-brand-border: light-dark(var(--l-brand-border), var(--d-brand-border));
+        --kb-ok: light-dark(var(--l-ok), var(--d-ok));
+        --kb-ok-bg: light-dark(var(--l-ok-bg), var(--d-ok-bg));
+        --kb-ok-border: light-dark(var(--l-ok-border), var(--d-ok-border));
+        --kb-fail: light-dark(var(--l-fail), var(--d-fail));
+        --kb-fail-bg: light-dark(var(--l-fail-bg), var(--d-fail-bg));
+        --kb-fail-border: light-dark(var(--l-fail-border), var(--d-fail-border));
+        --kb-block: light-dark(var(--l-block), var(--d-block));
+        --kb-block-bg: light-dark(var(--l-block-bg), var(--d-block-bg));
+        --kb-block-border: light-dark(var(--l-block-border), var(--d-block-border));
+        --kb-notrun: light-dark(var(--l-notrun), var(--d-notrun));
+        --kb-notrun-bg: light-dark(var(--l-notrun-bg), var(--d-notrun-bg));
+        --kb-notrun-border: light-dark(var(--l-notrun-border), var(--d-notrun-border));
+        --kb-radar-grid: light-dark(var(--l-radar-grid), var(--d-radar-grid));
+        --kb-scroll-track: light-dark(var(--l-scroll-track), var(--d-scroll-track));
+        --kb-scroll-thumb: light-dark(var(--l-scroll-thumb), var(--d-scroll-thumb));
+      }
+    }
+
+    :root {
+      scrollbar-color: var(--kb-scroll-thumb) var(--kb-scroll-track);
+      accent-color: var(--kb-brand);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+
+    body {
+      margin: 0;
+      background: var(--kb-bg);
+      color: var(--kb-text);
+      font-family: var(--kb-font-sans);
+      font-size: 14px;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .tabular { font-variant-numeric: tabular-nums; }
+    .mono { font-family: var(--kb-font-mono); }
+
+    /* Top command bar */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: var(--kb-surface);
+      border-bottom: 1px solid var(--kb-border);
+      backdrop-filter: blur(8px);
+    }
+    .topbar-inner {
+      max-width: 1420px;
+      margin: 0 auto;
+      padding: 10px 24px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .brand-lockup {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+    .brand-logo {
+      display: inline-flex;
+      align-items: center;
+      color: var(--kb-text-strong);
+      flex-shrink: 0;
+    }
+    .brand-divider {
+      width: 1px;
+      height: 18px;
+      background: var(--kb-border-strong);
+    }
+    .suite-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--kb-text-strong);
+      letter-spacing: -0.01em;
+    }
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 2px 9px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      border: 1px solid var(--kb-border);
+      background: var(--kb-surface-muted);
+      color: var(--kb-text-sec);
+      white-space: nowrap;
+    }
+    .pill-brand {
+      background: var(--kb-brand-soft);
+      border-color: var(--kb-brand-border);
+      color: var(--kb-brand);
+    }
+    .pill-ok {
+      background: var(--kb-ok-bg);
+      border-color: var(--kb-ok-border);
+      color: var(--kb-ok);
+    }
+    .pill-fail {
+      background: var(--kb-fail-bg);
+      border-color: var(--kb-fail-border);
+      color: var(--kb-fail);
+    }
+    .pill-block {
+      background: var(--kb-block-bg);
+      border-color: var(--kb-block-border);
+      color: var(--kb-block);
+    }
+    .pill-notrun {
+      background: var(--kb-notrun-bg);
+      border-color: var(--kb-notrun-border);
+      color: var(--kb-notrun);
+    }
+
+    .topbar-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: var(--kb-radius-sm);
+      border: 1px solid var(--kb-border-strong);
+      background: var(--kb-surface);
+      color: var(--kb-text-strong);
+      font-family: inherit;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.14s ease, border-color 0.14s ease;
+    }
+    .btn:hover { background: var(--kb-hover); }
+    .btn:focus-visible { outline: 2px solid var(--kb-brand); outline-offset: 2px; }
+    .btn-primary {
+      background: var(--kb-brand);
+      border-color: var(--kb-brand);
+      color: #ffffff;
+    }
+    .btn-primary:hover {
+      background: var(--kb-brand-hover);
+      border-color: var(--kb-brand-hover);
+    }
+    .btn[aria-pressed="true"] {
+      background: var(--kb-brand-soft);
+      border-color: var(--kb-brand);
+      color: var(--kb-brand);
+    }
+
+    /* Two-state theme toggle option branching */
+    .theme-opt-light { display: none; }
+    .theme-opt-dark { display: inline-flex; align-items: center; gap: 5px; }
+    @media (prefers-color-scheme: dark) {
+      .theme-opt-light { display: inline-flex; align-items: center; gap: 5px; }
+      .theme-opt-dark { display: none; }
+    }
+    :root:has(> head > meta[name="color-scheme"][content="dark"]) .theme-opt-light {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    :root:has(> head > meta[name="color-scheme"][content="dark"]) .theme-opt-dark {
+      display: none;
+    }
+    :root:has(> head > meta[name="color-scheme"][content="light"]) .theme-opt-light {
+      display: none;
+    }
+    :root:has(> head > meta[name="color-scheme"][content="light"]) .theme-opt-dark {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    /* Main workspace shell */
+    .shell {
+      max-width: 1420px;
+      margin: 0 auto;
+      padding: 20px 24px 60px;
+      display: grid;
+      gap: 18px;
+    }
+
+    /* Preview banner when default placeholder is shown */
+    .preview-banner {
+      background: var(--kb-brand-soft);
+      border: 1px solid var(--kb-brand-border);
+      border-radius: var(--kb-radius-md);
+      padding: 12px 16px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 13px;
+      color: var(--kb-text-strong);
+    }
+
+    /* Hero summary + dual ring + telemetry */
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+      gap: 16px;
+    }
+    @media (max-width: 1024px) {
+      .hero-grid { grid-template-columns: minmax(0, 1fr); }
+    }
+    .panel-card {
+      background: var(--kb-surface);
+      border: 1px solid var(--kb-border);
+      border-radius: var(--kb-radius-lg);
+      padding: 20px 22px;
+      box-shadow: var(--kb-shadow-sm);
+      min-width: 0;
+    }
+    .verdict-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .verdict-title {
+      margin: 0;
+      font-size: 19px;
+      font-weight: 700;
+      color: var(--kb-text-strong);
+      letter-spacing: -0.01em;
+    }
+    .verdict-summary {
+      margin: 0 0 18px;
+      color: var(--kb-text-sec);
+      font-size: 13.5px;
+    }
+    .rings-row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+    @media (max-width: 560px) {
+      .rings-row { grid-template-columns: minmax(0, 1fr); }
+    }
+    .ring-box {
+      background: var(--kb-surface-muted);
+      border: 1px solid var(--kb-border);
+      border-radius: var(--kb-radius-md);
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .ring-svg {
+      width: 68px;
+      height: 68px;
+      flex-shrink: 0;
+      transform: rotate(-90deg);
+    }
+    .ring-track {
+      fill: none;
+      stroke: var(--kb-border-strong);
+      stroke-width: 7;
+    }
+    .ring-fill {
+      fill: none;
+      stroke-width: 7;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.35s ease;
+    }
+    .ring-meta { min-width: 0; }
+    .ring-label {
+      font-size: 12px;
+      color: var(--kb-text-sec);
+      font-weight: 600;
+    }
+    .ring-val {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--kb-text-strong);
+      line-height: 1.2;
+      margin: 2px 0;
+    }
+    .ring-sub {
+      font-size: 12px;
+      color: var(--kb-text-muted);
+    }
+
+    /* 4-state mutual exclusion distribution bar */
+    .dist-wrap { display: grid; gap: 8px; }
+    .dist-bar {
+      height: 10px;
+      border-radius: 999px;
+      background: var(--kb-notrun-bg);
+      overflow: hidden;
+      display: flex;
+      border: 1px solid var(--kb-border);
+    }
+    .dist-seg { height: 100%; transition: width 0.3s ease; }
+    .dist-seg.ok { background: var(--kb-ok); }
+    .dist-seg.fail { background: var(--kb-fail); }
+    .dist-seg.block { background: var(--kb-block); }
+    .dist-seg.notrun { background: var(--kb-notrun); opacity: 0.45; }
+    .dist-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .legend-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--kb-border);
+      background: var(--kb-surface);
+      color: var(--kb-text);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .legend-btn:hover { background: var(--kb-hover); }
+    .legend-btn[aria-pressed="true"] {
+      border-color: var(--kb-brand);
+      background: var(--kb-brand-soft);
+      color: var(--kb-brand);
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .dot.ok { background: var(--kb-ok); }
+    .dot.fail { background: var(--kb-fail); }
+    .dot.block { background: var(--kb-block); }
+    .dot.notrun { background: var(--kb-notrun); }
+
+    /* Telemetry grid */
+    .section-kicker {
+      font-size: 11.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--kb-text-muted);
+      margin: 0 0 12px;
+    }
+    .telemetry-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px 14px;
+    }
+    @media (max-width: 560px) {
+      .telemetry-grid { grid-template-columns: minmax(0, 1fr); }
+    }
+    .tele-item {
+      background: var(--kb-surface-muted);
+      border: 1px solid var(--kb-border);
+      border-radius: var(--kb-radius-sm);
+      padding: 9px 12px;
+      min-width: 0;
+    }
+    .tele-item.wide { grid-column: 1 / -1; }
+    .tele-label {
+      font-size: 11.5px;
+      color: var(--kb-text-muted);
+      margin-bottom: 2px;
+    }
+    .tele-val {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--kb-text-strong);
+      overflow-wrap: anywhere;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .copy-mini {
+      padding: 2px 7px;
+      font-size: 11px;
+      border-radius: 4px;
+      border: 1px solid var(--kb-border-strong);
+      background: var(--kb-surface);
+      color: var(--kb-text-sec);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .copy-mini:hover { color: var(--kb-brand); border-color: var(--kb-brand); }
+
+    /* Accessible single-row scrolling tabs */
+    .tabs-shell {
+      display: grid;
+      gap: 14px;
+    }
+    .tablist {
+      display: flex;
+      overflow-x: auto;
+      border-bottom: 1px solid var(--kb-border);
+      gap: 4px;
+      scrollbar-width: thin;
+    }
+    .tablist [role="tab"] {
+      position: relative;
+      flex: none;
+      background: transparent;
+      border: 0;
+      padding: 10px 16px;
+      font-family: inherit;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--kb-text-sec);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .tablist [role="tab"]:hover { color: var(--kb-text-strong); }
+    .tablist [role="tab"]:focus-visible { outline: 2px solid var(--kb-brand); outline-offset: -2px; }
+    .tablist [role="tab"][aria-selected="true"] {
+      color: var(--kb-brand);
+    }
+    .tablist [role="tab"][aria-selected="true"]::after {
+      content: "";
+      position: absolute;
+      inset: auto 0 0;
+      border-block-end: 3px solid var(--kb-brand);
+    }
+
+    /* IMPORTANT: No padding/border/bg on [role="tabpanel"] directly (uses hidden="until-found") */
+    .panel-inner {
+      display: grid;
+      gap: 18px;
+    }
+
+    /* Capability radar + 6x23 matrix */
+    .cap-grid {
+      display: grid;
+      grid-template-columns: minmax(300px, 380px) minmax(0, 1fr);
+      gap: 16px;
+      align-items: start;
+    }
+    @media (max-width: 980px) {
+      .cap-grid { grid-template-columns: minmax(0, 1fr); }
+    }
+    .radar-wrap {
+      display: grid;
+      gap: 10px;
+      justify-items: center;
+    }
+    .radar-svg {
+      width: 100%;
+      max-width: 340px;
+      height: auto;
+      overflow: visible;
+    }
+    .radar-legend {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+      font-size: 12px;
+      color: var(--kb-text-sec);
+    }
+    .radar-swatch {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .swatch-box {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      border: 1.5px solid var(--kb-brand);
+      background: rgba(0, 124, 239, 0.16);
+    }
+    .swatch-box.ok {
+      border-color: var(--kb-ok);
+      background: rgba(21, 128, 61, 0.22);
+    }
+
+    .domains-matrix {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 12px;
+    }
+    .domain-card {
+      background: var(--kb-surface-muted);
+      border: 1px solid var(--kb-border);
+      border-radius: var(--kb-radius-md);
+      padding: 12px 14px;
+      display: grid;
+      gap: 8px;
+    }
+    .domain-card.highlighted {
+      border-color: var(--kb-brand);
+      box-shadow: 0 0 0 1px var(--kb-brand-border);
+    }
+    .domain-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .domain-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--kb-text-strong);
+      cursor: pointer;
+      background: transparent;
+      border: 0;
+      padding: 0;
+      font-family: inherit;
+      text-align: left;
+    }
+    .domain-name:hover { color: var(--kb-brand); }
+    .domain-stat {
+      font-size: 11.5px;
+      color: var(--kb-text-muted);
+      font-weight: 600;
+    }
+    .tag-cloud {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .tag-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      border: 1px solid var(--kb-border);
+      background: var(--kb-surface);
+      color: var(--kb-text);
+      font-family: var(--kb-font-mono);
+      font-size: 11.5px;
+      cursor: pointer;
+    }
+    .tag-chip:hover { border-color: var(--kb-brand); color: var(--kb-brand); }
+    .tag-chip[aria-pressed="true"] {
+      background: var(--kb-brand-soft);
+      border-color: var(--kb-brand);
+      color: var(--kb-brand);
+      font-weight: 700;
+    }
+
+    /* Filter toolbar & Expand/Collapse */
+    .filter-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px 14px;
+      background: var(--kb-surface);
+      border: 1px solid var(--kb-border);
+      border-radius: var(--kb-radius-md);
+    }
+    .filter-group {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+    .search-input {
+      padding: 6px 10px;
+      border-radius: var(--kb-radius-sm);
+      border: 1px solid var(--kb-border-strong);
+      background: var(--kb-surface-muted);
+      color: var(--kb-text-strong);
+      font-family: inherit;
+      font-size: 13px;
+      min-width: 210px;
+    }
+    .search-input:focus-visible { outline: 2px solid var(--kb-brand); outline-offset: 1px; }
+
+    /* Expand all button text swap */
+    [command="--toggle-all"][aria-expanded="true"] .expand,
+    [command="--toggle-all"][aria-expanded="false"] .collapse {
+      display: none;
+    }
+
+    /* Native details/summary accordion */
+    .accordion {
+      display: grid;
+      gap: 10px;
+    }
+    .case-item {
+      background: var(--kb-surface);
+      border: 1px solid var(--kb-border);
+      border-radius: var(--kb-radius-md);
+      box-shadow: var(--kb-shadow-sm);
+      overflow: hidden;
+    }
+    .case-item[data-status="failed"] { border-color: var(--kb-fail-border); }
+    .case-item[data-status="blocked"] { border-color: var(--kb-block-border); }
+    .case-item[data-status="not_run"] { opacity: 0.88; }
+
+    .case-item > summary {
+      list-style: none;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px 14px;
+      padding: 13px 16px;
+      cursor: pointer;
+    }
+    .case-item > summary::-webkit-details-marker { display: none; }
+    .case-summary-main {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+      flex: 1 1 360px;
+    }
+    .case-summary-main::before {
+      content: "";
+      inline-size: 12px;
+      block-size: 12px;
+      flex-shrink: 0;
+      background-color: var(--kb-text-sec);
+      mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path d='M3.2 5.2a.75.75 0 0 1 1.06 0L8 8.94l3.74-3.74a.75.75 0 1 1 1.06 1.06l-4.27 4.27a.75.75 0 0 1-1.06 0L3.2 6.26a.75.75 0 0 1 0-1.06Z'/></svg>") no-repeat center / contain;
+      rotate: -90deg;
+    }
+    .case-item[open] > summary .case-summary-main::before { rotate: 0deg; }
+    @media (prefers-reduced-motion: no-preference) {
+      .case-summary-main::before { transition: rotate 0.2s ease; }
+    }
+
+    .case-id {
+      font-family: var(--kb-font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--kb-brand);
+      background: var(--kb-brand-soft);
+      padding: 2px 7px;
+      border-radius: 5px;
+      flex-shrink: 0;
+    }
+    /* Note: Do not use heading elements inside summary per accessibility rule */
+    .case-title {
+      font-size: 14.5px;
+      font-weight: 700;
+      color: var(--kb-text-strong);
+      min-width: 0;
+    }
+    .case-summary-side {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .case-item::details-content {
+      interpolate-size: allow-keywords;
+      overflow: clip;
+      contain: layout;
+    }
+    .case-item:not([open])::details-content {
+      block-size: 0;
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      .case-item::details-content {
+        transition: block-size 0.26s ease-in-out, content-visibility 0.26s ease-in-out, display 0.26s ease-in-out;
+        transition-behavior: allow-discrete;
+      }
+    }
+
+    .case-body {
+      border-top: 1px solid var(--kb-border);
+      padding: 16px 18px 18px;
+      display: grid;
+      gap: 14px;
+      background: var(--kb-surface-muted);
+    }
+    .case-meta-strip {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .metric-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .metric-chip {
+      font-size: 12px;
+      padding: 3px 9px;
+      border-radius: 6px;
+      background: var(--kb-surface);
+      border: 1px solid var(--kb-border);
+      color: var(--kb-text);
+    }
+    .metric-chip strong { color: var(--kb-text-strong); }
+
+    .note-box {
+      padding: 10px 12px;
+      border-radius: var(--kb-radius-sm);
+      border: 1px solid var(--kb-border);
+      background: var(--kb-surface);
+      font-size: 13px;
+      color: var(--kb-text);
+    }
+    .note-box.calib { border-color: var(--kb-brand-border); background: var(--kb-brand-soft); }
+    .note-box.fail { border-color: var(--kb-fail-border); background: var(--kb-fail-bg); }
+    .note-box.block { border-color: var(--kb-block-border); background: var(--kb-block-bg); }
+
+    .cmd-box {
+      background: var(--kb-surface);
+      border: 1px solid var(--kb-border);
+      border-radius: var(--kb-radius-sm);
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-family: var(--kb-font-mono);
+      font-size: 12px;
+      overflow-x: auto;
+    }
+
+    /* Responsive table */
+    .table-wrapper {
+      overflow: auto;
+      max-inline-size: 100%;
+      max-block-size: min(500px, 75vh);
+      container-type: inline-size;
+      border: 1px solid var(--kb-border);
+      border-radius: var(--kb-radius-sm);
+      background: var(--kb-surface);
+    }
+    .table-wrapper:focus-visible { outline: 2px solid var(--kb-brand); outline-offset: 2px; }
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      font-size: 13px;
+    }
+    caption.sr-only-caption {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+    }
+    thead {
+      position: sticky;
+      inset-block-start: 0;
+      z-index: 2;
+      background: var(--kb-bg-subtle);
+    }
+    th, td {
+      padding: 9px 12px;
+      text-align: left;
+      vertical-align: top;
+      border-bottom: 1px solid var(--kb-border);
+    }
+    thead th {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--kb-text-sec);
+      white-space: nowrap;
+      border-bottom: 1px solid var(--kb-border-strong);
+    }
+    tbody th {
+      position: sticky;
+      inset-inline-start: 0;
+      z-index: 1;
+      background: var(--kb-surface);
+      font-weight: 600;
+      color: var(--kb-text-strong);
+      white-space: nowrap;
+    }
+    tbody tr:last-child th,
+    tbody tr:last-child td { border-bottom: 0; }
+
+    @container (width < 640px) {
+      table, thead, tbody, tr, th, td { display: block; }
+      thead { display: none; }
+      tbody tr {
+        margin: 10px;
+        border: 1px solid var(--kb-border);
+        border-radius: var(--kb-radius-sm);
+        overflow: hidden;
+      }
+      tbody th {
+        position: sticky;
+        inset-block-start: 0;
+        background: var(--kb-bg-subtle);
+        border-bottom: 1px solid var(--kb-border);
+      }
+      td[data-label]::before {
+        content: attr(data-label) "：";
+        font-weight: 700;
+        color: var(--kb-text-sec);
+      }
+    }
+
+    /* Audit & Facts grids */
+    .cards-2col {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 14px;
+    }
+    .fact-list {
+      margin: 0;
+      padding-left: 18px;
+      display: grid;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--kb-text);
+    }
+    .bar-list { display: grid; gap: 10px; }
+    .bar-row {
+      display: grid;
+      grid-template-columns: 90px minmax(0, 1fr) 120px;
+      align-items: center;
+      gap: 10px;
+      font-size: 12.5px;
+    }
+    .bar-track {
+      height: 10px;
+      background: var(--kb-bg-subtle);
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid var(--kb-border);
+    }
+    .bar-fill {
+      height: 100%;
+      background: var(--kb-brand);
+      border-radius: 999px;
+    }
+
+    /* Dropzone */
+    .dropzone {
+      border: 2px dashed var(--kb-border-strong);
+      border-radius: var(--kb-radius-lg);
+      padding: 28px 20px;
+      text-align: center;
+      background: var(--kb-surface-muted);
+      transition: border-color 0.15s ease, background-color 0.15s ease;
+    }
+    .dropzone.dragover {
+      border-color: var(--kb-brand);
+      background: var(--kb-brand-soft);
+    }
+
+    /* Native modal drawer */
+    dialog#case-drawer {
+      margin: 0 0 0 auto;
+      padding: 0;
+      width: min(680px, 100vw);
+      max-width: 100vw;
+      height: 100dvh;
+      max-height: 100dvh;
+      border: 0;
+      border-left: 1px solid var(--kb-border);
+      background: var(--kb-surface);
+      color: var(--kb-text);
+      box-shadow: var(--kb-shadow-overlay);
+    }
+    dialog#case-drawer[open] {
+      display: flex;
+      flex-direction: column;
+    }
+    dialog#case-drawer:modal {
+      overscroll-behavior: contain;
+    }
+    dialog#case-drawer::backdrop {
+      background: rgba(15, 23, 42, 0.52);
+      backdrop-filter: blur(2px);
+      overflow: hidden;
+      overscroll-behavior: contain;
+    }
+    .drawer-head {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--kb-border);
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      background: var(--kb-surface);
+    }
+    .drawer-head h1 {
+      margin: 4px 0 0;
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--kb-text-strong);
+    }
+    .drawer-body {
+      padding: 18px 20px 28px;
+      overflow-y: auto;
+      display: grid;
+      gap: 16px;
+      flex: 1 1 auto;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      z-index: 40;
+      background: var(--kb-text-strong);
+      color: var(--kb-surface);
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 12.5px;
+      font-weight: 600;
+      box-shadow: var(--kb-shadow-overlay);
+    }
+
+    @media print {
+      .topbar-actions, .filter-bar, .preview-banner, .tablist, .copy-mini { display: none !important; }
+      body { background: #ffffff; color: #111827; }
+      .panel-card, .case-item { box-shadow: none; break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand-lockup">
+        <span class="brand-logo" aria-label="KuaiBuddy">
+          <svg width="98" height="18" viewBox="0 0 120 22" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M47.0745 3.97493L46.7553 4.0145L46.5294 4.0678H46.29L45.7845 3.94812L45.5585 3.82844L45.3259 3.63567L45.1794 3.40971L45.1398 3.31652L44.9668 3.07716L44.9269 2.8911V2.65173L44.9135 2.63833L44.9269 2.62493V2.43886L44.9668 2.23939L45.0067 2.15961L45.113 2.02652L45.1928 1.84046L45.2994 1.68088L45.5186 1.50152L45.8244 1.31514L46.2102 1.23535H46.6756L46.689 1.24876L46.9548 1.27525L47.048 1.30173L47.2475 1.42173L47.3802 1.52801L47.5465 1.69429L47.693 1.93365L47.8922 2.15961L47.9324 2.30578L47.9455 2.57195L47.9589 2.58503V2.81131L47.9455 2.82439V2.95748L47.919 3.07716L47.8657 3.17035L47.6796 3.35642L47.5334 3.63567L47.1942 3.92163L47.0745 3.97493ZM0.325881 16.7473L0.272583 16.6276L0.259179 16.4814L0.246094 16.468L0.259179 16.1623L0.272583 16.1489V16.056L0.259179 16.0426V14.2075L0.272583 14.1941V9.44674L0.259179 9.43365L0.272583 2.02652L0.259179 2.01344V1.92025L0.272583 1.90684V1.81397L0.312477 1.69429L0.41237 1.5679L0.518647 1.51461L0.758009 1.50152L0.771413 1.48812H2.97865L3.12514 1.52801L3.19152 1.5679L3.25152 1.62759L3.3045 1.72078L3.34439 1.88035V4.0212L3.33131 4.03461V5.12514L3.34439 5.13822L3.33131 9.28716L3.34439 9.30056V10.085L3.38429 10.2181L3.41748 10.2513H3.48418L3.63035 10.1715L3.73024 10.0719L3.78322 9.97876L4.04939 9.73939L4.12918 9.61971L4.31524 9.44674L4.40811 9.30056L4.63439 9.1011L4.71418 8.95493L4.88684 8.79535L5.01992 8.60897L5.2462 8.4095L5.28577 8.34312L5.56535 8.06386L5.72492 7.85099L6.08365 7.53184L6.21673 7.37227L6.34982 7.1728L6.68237 6.88046L6.88152 6.65418L7.00152 6.48152L7.12758 6.38163L7.54663 5.9629L7.63982 5.81642L7.76588 5.71684L7.87918 5.60386L7.91875 5.53716L8.17152 5.2978L8.25131 5.13822L8.42428 4.96556L8.51748 4.81908L8.75684 4.61961L8.84971 4.46003L9.02269 4.30046L9.12897 4.15429L9.35492 3.95482L9.47492 3.76876L10.0864 3.15695L10.2326 2.95748L10.4056 2.7845L10.4853 2.66482L10.6382 2.55184L10.7646 2.42546L10.8444 2.29269L11.0174 2.13312L11.0972 2.00003L11.2101 1.88705L11.2634 1.86025L11.5028 1.59439L11.7023 1.51461L11.9946 1.50152L12.008 1.48812H12.1277L12.1411 1.50152H12.4203L12.4334 1.48812L14.4415 1.50152L14.4549 1.48812H14.7607L14.7741 1.47471H16.0772L16.0906 1.48812L16.4895 1.50152L16.7021 1.46131L16.7952 1.48812L16.8817 1.5612L16.9347 1.69429V1.80056L16.8951 1.89376L16.7818 2.00673L16.6756 2.08652L16.5425 2.1529L16.3564 2.33897L16.2102 2.39227L16.1171 2.44556L15.9575 2.60514L15.7047 2.7912L15.4653 3.00408L15.2129 3.13684L15.0664 3.29642L14.8669 3.40301L14.6544 3.61556L14.4281 3.76205L14.1757 3.97493L13.9893 4.09429L13.7898 4.29408L13.6172 4.37386L13.4576 4.53344L13.2447 4.63971L13.0188 4.87908L12.8723 4.98535L12.7261 5.06514L12.5266 5.25152L12.3272 5.3578L12.1941 5.51737L11.9148 5.67695L11.7686 5.81003L11.7023 5.84961L11.423 6.12918L11.2765 6.23546L11.1039 6.32833L10.9574 6.47482L10.718 6.56769L10.5319 6.78056L10.2792 6.94014L10.0267 7.16642L9.77397 7.29918L9.66099 7.45205L9.49471 7.56535L9.32173 7.75142L9.13567 7.84429L8.9362 8.04408L8.63046 8.24322L8.44407 8.42961L8.21811 8.53588L8.04514 8.72195L7.81918 8.84195L7.60631 9.0545L7.0612 9.48025L6.84833 9.7062L6.59588 9.82588L6.43631 9.99854L6.24992 10.1051L6.09035 10.2781L5.90428 10.3975L5.66492 10.5973L5.34577 10.9295L5.11982 11.0891L4.96663 11.2419L4.91365 11.3217L4.57439 11.661L4.41482 11.7673L4.32833 11.8538L4.28875 11.9201L3.66354 12.5584L3.47748 12.7978L3.19822 13.064L3.11843 13.1837L2.95886 13.3563L2.89216 13.4629L2.69301 13.6624L2.57301 13.8749L2.40035 14.0345L2.34705 14.181L2.24077 14.3537L2.05471 14.5531L1.92163 14.766L1.76875 14.8924L1.70875 14.9655L1.66886 15.0587L1.65577 15.1515L1.61556 15.2313L1.4429 15.4043L1.26992 15.7633L1.08386 15.9494L1.01748 16.1888L0.910881 16.415L0.7912 16.5347L0.671519 16.7342L0.611838 16.7939L0.518647 16.8338H0.43886L0.385562 16.8073L0.325881 16.7473ZM51.1302 16.8737L51.0706 16.814L51.0173 16.7074L50.9908 16.5746V16.468L50.9774 16.4549V16.3352L50.9908 16.3218V7.91769L51.0039 7.90429V6.10908L50.9908 6.09567L51.0039 2.07982L50.9908 2.06642V1.86695L51.0307 1.70737L51.0836 1.6145L51.1701 1.5411L51.2898 1.50152H53.9627L53.9761 1.48812H55.133L55.1464 1.47471L56.7552 1.48812L56.7686 1.50152H58.0985L58.1116 1.51461L60.3326 1.50152L60.3457 1.51461L60.6916 1.52801L60.7047 1.5411L61.1704 1.5545L61.1834 1.5679H61.29L61.3031 1.58131H61.3963L61.516 1.6078L61.7289 1.62088L61.9548 1.71407L62.1278 1.83376L62.4335 1.91354L62.6464 1.94003L62.7527 1.98025L62.9656 2.08652L63.0718 2.16631L63.3112 2.23269L63.5107 2.32588L63.7101 2.48546L63.9361 2.57833L64.149 2.77812L64.2552 2.8445L64.3883 2.96418L64.8473 3.4761L64.9535 3.70205L65.0464 3.80865L65.0997 3.91493L65.1664 4.11439L65.1929 4.28737L65.2858 4.59312L65.4189 4.81908L65.4588 4.97865V5.04535L65.4722 5.05844V5.64376L65.4588 5.65684L65.4454 5.9361L65.3656 6.17546L65.2727 6.32195L65.2194 6.44163L65.1664 6.6411L65.153 6.89354L65.1262 6.97333L65.0333 7.13291L64.9271 7.26599L64.8205 7.49195L64.621 7.69142L64.5214 7.8178L64.4017 7.89759L64.3018 7.99748L64.2153 8.11046L64.0159 8.23014L63.8831 8.34982L63.7235 8.4162L63.6169 8.48259L63.5707 8.52918V8.55599L63.6568 8.64216L63.8962 8.76216L64.0159 8.85503L64.0692 8.88152L64.2686 8.92173L64.4815 9.01461L64.681 9.17418L64.8671 9.26737L65.093 9.49333L65.2261 9.58652L65.4588 9.81918L65.6049 10.0719L65.7115 10.1916L65.8711 10.6834L66.0441 10.8698L66.1369 11.0958L66.2301 11.6409L66.2965 11.8273L66.3364 12.0267V12.6117L66.323 12.6251L66.2965 12.9175L66.2432 13.0905L66.2167 13.2899L66.1902 13.3432L66.0971 13.8749L66.0706 13.9282L65.911 14.1012L65.8047 14.3272L65.7645 14.5799L65.6049 14.7794L65.4588 15.0318L65.3458 15.1451L65.266 15.1981L65.0799 15.3976L65.0001 15.4509L64.734 15.7301L64.6143 15.8099L64.4282 15.8897L64.2552 16.0359L64.0028 16.1026L63.8298 16.1824L63.75 16.2354L63.6303 16.355L63.577 16.3815L63.0983 16.4881L62.9522 16.5545L62.8724 16.5679L62.6729 16.6477L62.3802 16.6876L62.3672 16.7007L61.2367 16.7674L61.2233 16.7805L60.9042 16.8073L60.7181 16.8472H60.6118L60.3591 16.9005L60.1861 16.9135L60.0932 16.94H59.9601L59.9467 16.9534H59.3751L59.3617 16.94H56.2101L56.1967 16.9534H55.4522L55.4388 16.9668L54.0958 16.9534L54.0824 16.94H51.8617L51.8483 16.9534H51.3166L51.2499 16.94L51.1302 16.8737ZM83.7632 16.4083L83.5108 16.1556L83.4042 16.0892L83.2315 16.0359L83.085 15.8897L82.9255 15.7965L82.6995 15.5572L82.6331 15.5173L82.5198 15.4043L82.4202 15.2779L82.3073 15.1914L82.1876 14.9655L82.0015 14.8059L81.8684 14.5531L81.6422 14.2474L81.6026 14.0214L81.5094 13.7687L81.3632 13.5558L81.2566 13.0905L81.0706 12.5983L81.0307 12.2926L81.0173 12.2792L81.0039 11.8139L80.9908 11.8005V11.1357L81.0039 11.1223V10.8031L81.0173 10.79L81.0307 10.5638L81.1105 10.3113L81.2301 10.0451L81.2566 9.85908L81.2965 9.73939L81.3364 9.52652L81.5624 9.12759L81.5892 8.90163L81.669 8.70216L81.8684 8.44939L81.9482 8.27673L82.1078 8.11716L82.2409 7.91769L82.5466 7.57173L82.5996 7.49195L82.6861 7.40578L82.7927 7.33908L83.085 7.01993L83.484 6.70078L83.6968 6.5811L83.8564 6.42152L84.202 6.27535L84.4548 6.12918L84.6409 6.10237L84.9335 6.00918L85.0267 5.9562L85.133 5.86301L85.3724 5.76982L85.9309 5.69003L86.0506 5.65046L86.3298 5.59716H86.423L86.4361 5.58376H86.7288L86.7422 5.57067H86.9416L86.9547 5.55727H87.3272L87.3406 5.57067H87.5665L87.5799 5.58376L87.8059 5.59716L87.952 5.63705L88.2447 5.67695L88.3111 5.70344H88.3778L88.6302 5.75673L88.8431 5.76982L88.8964 5.79663H88.9363L89.109 5.87642L89.2156 5.96961L89.2953 6.00918L89.7741 6.14227L89.827 6.16876L90 6.31525L90.0932 6.34173L90.1596 6.32833L90.2196 6.26865L90.2461 6.18886V6.12248L90.2327 6.10908V5.88312L90.2461 5.86971V4.79259L90.2327 4.77918L90.2461 1.81397L90.2994 1.62759L90.4124 1.51461L90.5585 1.47471L90.6249 1.48812H91.1036L91.1171 1.50152H92.1409L92.1543 1.48812H92.3538L92.5398 1.5411L92.6196 1.59439L92.6796 1.66748L92.746 1.85386V2.10631L92.7326 2.11971V4.34035L92.7195 4.35376L92.7326 15.2182L92.7195 15.2313V16.5478L92.6662 16.7473L92.5666 16.8602L92.3802 16.94H92.1278L92.1144 16.9269L90.6249 16.94L90.6118 16.9269H90.5321L90.399 16.8602L90.2994 16.7342L90.2592 16.5746V16.2156L90.1928 16.0825L90.1462 16.0493H90.0798L89.9467 16.1157L89.6675 16.3815L89.4948 16.4613L89.2685 16.5146L89.056 16.6343L88.8297 16.7141L88.6302 16.7409L88.3379 16.8207L88.2581 16.8602L88.1384 16.9534L87.8857 17.0466L87.6597 17.06L87.5266 17.0865H87.3671L87.3536 17.0996H86.2366L86.2235 17.0865H86.0372L86.0241 17.0731L85.7448 17.06L85.6382 17.0332L85.4388 17.0198L85.3858 17.0067L84.9868 16.7939L84.6808 16.7275L84.4682 16.7141L84.3884 16.6876L84.016 16.4881L83.8963 16.4613L83.7632 16.4083ZM97.3938 16.4083L97.141 16.169L96.915 16.0758L96.7421 15.9162L96.5959 15.8364L95.9643 15.1914L95.8845 15.0587L95.7249 14.8991L95.6847 14.8324L95.6317 14.6597L95.3924 14.4069L95.3126 14.2608L95.2462 14.0744L95.1131 13.8749L95.0333 13.6091L95.0199 13.423L94.9136 13.1169L94.8071 12.9842L94.7541 12.8511L94.7142 12.665V12.5718L94.7008 12.5584L94.6609 11.8404L94.6475 11.8273V11.3351L94.6609 11.3217V11.1491L94.6743 11.1357V10.9895L94.6877 10.9761L94.7142 10.4441L94.7675 10.1782L94.9002 9.97876L94.9934 9.76588L95.0199 9.53993L95.0598 9.43365L95.0866 9.26067L95.1262 9.18088L95.2593 9.00791L95.4058 8.63578L95.452 8.57578L95.5653 8.48929L95.6183 8.4095L95.6981 8.22344L95.9509 7.89088L96.0173 7.7712L96.1172 7.67163L96.1969 7.61833L96.2965 7.51876L96.3498 7.43897L96.7286 7.05982L96.8617 6.96663L97.0213 6.82046L97.327 6.6079L97.5134 6.42152L97.6063 6.38163L97.7394 6.35514L98.0052 6.22205L98.1648 6.11578L98.3911 6.08897L98.6569 6.00918L98.7367 5.96961L98.843 5.87642L98.9895 5.81003L99.1357 5.76982L99.3351 5.75673L99.4813 5.71684L99.6278 5.70344L99.7475 5.66354L99.9469 5.63705L100.093 5.59716H100.173L100.186 5.58376H100.346L100.359 5.57067H100.519L100.532 5.55727H100.931L100.944 5.57067H101.17L101.184 5.58376H101.37L101.383 5.59716H101.622L102.061 5.70344L102.58 5.76982L102.832 5.86301L102.926 5.9428L103.045 6.00918L103.324 6.08897L103.55 6.10237L103.75 6.22205L103.843 6.20897L103.89 6.13556L103.903 6.02929L103.93 5.9629V3.63567L103.916 3.62227L103.903 1.92025L103.916 1.90684V1.82705L103.983 1.66748L104.082 1.5679L104.255 1.50152L106.037 1.48812L106.263 1.5545L106.363 1.64099L106.416 1.74727L106.443 1.85386V4.47344L106.456 4.48684L106.443 8.15705L106.456 8.17014V8.94152L106.469 8.95493L106.456 10.5239L106.443 10.5373V13.9017L106.456 13.9148V15.4442L106.443 15.4576V15.7767L106.456 15.7898V16.4948L106.376 16.7342L106.25 16.8602L106.144 16.9135L106.024 16.94H105.957L105.944 16.9269L104.362 16.94L104.348 16.9269L104.216 16.9135L104.082 16.8472L104.009 16.7741L103.969 16.6943L103.943 16.5877V16.4016L103.969 16.3084V16.2287L103.93 16.1358L103.857 16.0758H103.763L103.59 16.1556L103.351 16.3815L102.965 16.5411L102.806 16.6611L102.58 16.7275L102.341 16.7409L102.128 16.7939L101.995 16.8472L101.862 16.9534L101.675 17.0332L101.516 17.0466L101.503 17.06H101.29L101.277 17.0731H101.144L101.13 17.0865H100.984L100.971 17.0996L100.12 17.113L100.107 17.0996H99.9201L99.9071 17.0865H99.774L99.6409 17.06H99.4813L99.4682 17.0466L99.1491 17.0067L98.9496 16.9005L98.8564 16.8737L98.6968 16.7939L98.3643 16.7275H98.258L98.1249 16.7007L97.8856 16.6209L97.7394 16.528L97.5399 16.4747L97.3938 16.4083ZM62.7061 6.20227V6.01588L62.7195 6.0028V5.85631L62.7326 5.84322V5.77652L62.7195 5.76344L62.7326 5.44429L62.7195 5.43088L62.693 5.17812L62.6528 5.07184L62.5599 4.97865L62.52 4.89886L62.4801 4.75269L62.4268 4.6595L62.2341 4.45365L62.0212 4.28067L61.8884 4.20088L61.7155 4.04131L61.6622 4.0145L61.4496 3.97493L61.3165 3.92163L61.2102 3.90822L61.0108 3.81535L60.8244 3.78854L60.7047 3.74865L60.5052 3.73556L60.4124 3.70876L60.1462 3.69535L60.1331 3.68227H59.9068L59.8938 3.66886H59.6276L59.6145 3.65578H58.4975L58.4841 3.64237L54.3217 3.65578L54.202 3.62897L54.189 3.64237H54.1223L54.0559 3.68227L53.9828 3.79525V3.96822L53.9962 3.98131V5.45737L53.9828 5.47078V7.01322L53.9962 7.02663V7.35918L53.9828 7.37227V7.50535L53.9962 7.55865L54.0492 7.63844L54.1357 7.69812H54.2952L54.3087 7.68471L59.6943 7.69812L59.7074 7.68471L60.226 7.67163L60.2394 7.65822H60.3725L60.5052 7.63173H60.6916L60.8777 7.59184H60.9709L61.0772 7.56535L61.1704 7.51205L61.29 7.47216L61.4761 7.36556L61.689 7.33908L61.8616 7.2328L62.1409 6.98003L62.274 6.88684L62.4003 6.76078L62.5066 6.6012L62.573 6.41482L62.6796 6.26865L62.7061 6.20227ZM32.8724 16.3949L32.6595 16.1824L32.4868 16.0892L32.3005 15.8897L32.1808 15.8099L32.0413 15.6302L31.8951 15.4841L31.7486 15.1914L31.7087 15.0452L31.6025 14.8723L31.5358 14.6064V14.5001L31.5227 14.4867V14.0744L31.5093 14.0613L31.5227 13.3298L31.5358 13.3164V13.1568L31.576 12.9574L31.629 12.7978L31.7486 12.5852L31.7885 12.4123L31.8683 12.2393L32.0812 12.0267L32.2009 11.8273L32.46 11.5678L32.6464 11.4615L32.8724 11.2088L33.165 11.0492L33.3776 10.8896L33.4708 10.8631L33.6169 10.8497L33.7101 10.8098L33.8962 10.7699L33.9629 10.73L34.0692 10.6238L34.1889 10.5705L34.3618 10.5306L34.5744 10.5175L34.8406 10.4642L35.0132 10.3975L35.3324 10.3177L35.5188 10.3046L35.7182 10.2647H35.8245L35.8379 10.2513L36.3696 10.2379L36.383 10.2248H36.9814L36.9948 10.2379H37.7528L37.7659 10.2248H38.032L38.0451 10.2379H39.7475L39.8672 10.2781H39.9868L40.0267 10.2647L40.0864 10.2047L40.1397 10.1118V9.88556L40.1263 9.87248L40.1397 9.19429L40.1263 9.18088L40.1132 8.92812L40.0334 8.68876L39.9932 8.60897L39.8605 8.4762L39.7673 8.28982L39.6677 8.19025L39.4283 8.09705L39.0425 7.8711L38.9228 7.84429H38.8299L38.6834 7.80471H38.5507L38.5373 7.79131H38.4176L38.4042 7.7779H38.1383L38.1249 7.7645H37.9788L37.9653 7.75142L37.5533 7.72493L37.5399 7.71152H36.4229L36.4095 7.72493H36.21L36.1969 7.73801H35.9043L35.8909 7.75142L35.6384 7.7645L35.5188 7.79131L35.1996 7.80471L35.1862 7.8178H34.9867L34.9733 7.8312L34.734 7.84429L34.5479 7.8845L34.3749 7.89759L34.1889 7.97737L34.0826 8.00386L33.8831 8.09705L33.4175 8.19025L33.3377 8.23014L33.1915 8.36322L33.1117 8.4028L32.9656 8.4162L32.8724 8.38971L32.7728 8.31663L32.693 8.18354L32.6796 8.13025V7.89088L32.6662 7.8778L32.693 6.6411L32.7728 6.45471L32.8724 6.36854L33.0319 6.28876L33.2713 6.22205L33.4044 6.15567L33.6438 6.11578L33.7101 6.08897L33.9495 6.07588L34.0159 6.04939L34.2422 6.00918L34.7209 5.79663L34.8805 5.78322L34.9733 5.75673H35.1597L35.1728 5.74333L35.5318 5.71684L35.6515 5.69003L36.0903 5.67695L36.1038 5.66354H36.2499L36.2633 5.65046H36.383L36.3964 5.63705H36.5027L36.6358 5.61025L37.7793 5.59716L37.7927 5.61025H37.9255L37.9389 5.62365H38.0451L38.1782 5.65046L38.6968 5.67695L38.8031 5.70344L39.375 5.75673L39.5212 5.79663H39.5879L39.7207 5.84961L39.8403 5.9428L40.0532 6.03599L40.2128 6.07588H40.2926L40.6382 6.16876L40.7448 6.24854L40.8511 6.30184L40.9574 6.32833L41.0241 6.36854L41.2101 6.43493L41.3831 6.6079L41.6225 6.75408L41.7023 6.83386L41.8618 6.94014L41.9483 7.02663L42.0281 7.14631L42.1475 7.26599L42.1877 7.33237L42.2008 7.41216L42.2541 7.54525L42.4401 7.7712L42.5199 7.97067L42.5333 8.14365L42.5732 8.28982L42.5866 8.4628L42.6262 8.59588L42.653 8.83525L42.6664 8.84833V10.843L42.6795 10.8564V12.1196L42.6929 12.133L42.6664 16.5079L42.6262 16.641L42.5732 16.7473L42.4334 16.8737L42.2608 16.94H42.0479L42.0345 16.9269L41.064 16.94L41.0506 16.9534H40.891L40.8776 16.9668H40.6516L40.6382 16.9534L40.4921 16.94L40.3325 16.8602L40.2594 16.7872L40.2195 16.7208L40.1662 16.5079L40.193 16.2156L40.1528 16.0426L40.1263 15.9893L40.0797 15.9561H39.9868L39.5212 16.2089L39.3616 16.3684L38.8698 16.5411L38.6834 16.6611L38.5373 16.6876L38.431 16.7275L38.2181 16.7409L37.8725 16.8073L37.6063 16.9668L37.4601 17.0332L37.2208 17.0466L37.2074 17.06L36.6623 17.0731L36.6489 17.0865H35.625L35.6116 17.0731H35.2925L35.2794 17.06H35.0001L34.9867 17.0466L34.7075 17.0332L34.3484 16.9534L34.2422 16.8737L33.9894 16.7674L33.6702 16.7409L33.4574 16.6876L33.3377 16.6209L33.2448 16.5411L32.8724 16.3949ZM19.8406 16.0094L19.6475 15.8166L19.5945 15.7368L19.4215 15.5505L19.3018 15.3245L19.1557 15.1783L19.1024 15.0985L19.0092 14.8723L18.9696 14.6597L18.8764 14.4867L18.81 14.3138L18.7698 14.1277L18.7567 13.5159L18.7433 13.5028V12.133L18.7567 12.1196V5.98939L18.7966 5.8962L18.8831 5.81003L19.0293 5.75673H19.3085L19.3219 5.74333H19.5345L19.5479 5.75673H20.9308L21.0505 5.78322L21.1701 5.83652L21.2566 5.92301L21.3099 6.06918L21.2965 6.34844L21.3099 6.36184V6.61429L21.323 6.62769L21.3099 10.3777L21.323 10.3911V11.6144L21.3364 11.6278V12.2527L21.3498 12.2661V13.0372L21.3632 13.0506L21.3763 13.2765L21.4028 13.3563L21.4162 13.5692L21.4826 13.7687L21.5493 13.9017L21.7219 14.0613L21.8017 14.2474L21.855 14.3138L21.9415 14.3868L22.1145 14.4934L22.2208 14.5997L22.327 14.653L22.7528 14.7858L22.8856 14.879L23.1782 14.9454H24.016L24.0294 14.9323H24.2688L24.2818 14.9454L24.2952 14.9323H24.4283L24.6409 14.8924L24.8273 14.7992L24.9999 14.7462L25.0398 14.7194L25.2792 14.6929L25.4786 14.6131L25.5453 14.5732L25.7049 14.4271L25.7978 14.3868L25.9708 14.3473L26.0241 14.3071L26.2101 14.2273L26.4096 14.0412L26.5692 13.9483L26.7153 13.7888L26.9148 13.6688L26.9879 13.5692L27.0013 13.25L27.0147 13.2366V13.1702L27.0013 13.1568V12.4123L26.9879 12.3989L27.0013 10.3244L27.0147 10.3113L27.0013 10.258V6.29514L27.0147 6.28205L27.0013 6.24216V6.05578L27.0546 5.8962L27.1411 5.81003L27.2873 5.75673H27.4069L27.4203 5.74333L29.2022 5.75673L29.3084 5.78322L29.3751 5.82312L29.4348 5.88312L29.4881 6.0028L29.5015 6.24216L29.5146 6.25525V6.45471L29.5015 6.46812V13.3033L29.5146 13.3164L29.5015 16.3617L29.5146 16.3751V16.4415L29.4613 16.6675L29.3684 16.8271L29.2819 16.9005L29.1623 16.9534H28.9628L28.9494 16.94H27.5001L27.4867 16.9269H27.3671L27.2873 16.9005L27.1344 16.7872L27.0677 16.6675L27.0281 16.5079L27.0412 16.2954L27.0546 16.2819L27.0412 16.0426L27.0147 15.9628L26.9815 15.9296L26.8883 15.9162L26.7686 15.9826L26.6225 16.1026L26.4096 16.1955L26.25 16.355L26.1702 16.3949L25.8246 16.5015L25.7448 16.5411L25.5852 16.6611L25.3191 16.7409L25.1196 16.754L24.9868 16.7939L24.8005 16.8207L24.5745 16.9534L24.3485 17.0332L23.9627 17.06L23.9496 17.0731H23.79L23.7766 17.0865H23.6305L23.6171 17.0996H23.3777L23.3643 17.113H22.7394L22.726 17.0996L22.1809 17.0865L22.1675 17.0731L21.9814 17.06L21.8352 17.0198L21.5959 16.9135L21.4762 16.8338L21.3565 16.7939H21.3032L21.1436 16.7409L20.9442 16.7141L20.5586 16.4881L20.3193 16.3949L20.1329 16.2219L19.8406 16.0094ZM69.2818 15.7965L69.2356 15.7499L69.0891 15.5106L68.9164 15.3379L68.8631 15.2581L68.8232 15.1515L68.7964 14.9919L68.6104 14.6996L68.544 14.5001L68.5306 14.3537L68.4907 14.234L68.4642 14.0613L68.3975 13.8883L68.371 13.7154L68.3177 13.5558L68.3046 13.3563L68.2912 13.3432V13.1039L68.3046 13.0905V9.92546L68.2912 9.91237L68.3046 6.5345L68.3177 6.52142L68.3311 6.04269L68.3975 5.90961L68.5239 5.81003L68.7766 5.75673H70.6915L70.8377 5.81003L70.9111 5.88312L70.9507 5.97599V6.04269L70.9641 6.05578L70.9507 9.99216L70.9641 10.0052V11.5081L70.9775 11.5212V13.1568L71.0439 13.5028L71.1505 13.7023L71.19 13.9148L71.3365 14.1676L71.3962 14.2273L71.5826 14.3339L71.7951 14.5464L71.9282 14.6396L72.0479 14.6929L72.2474 14.7328L72.4334 14.8391L72.6597 14.9323L72.939 14.9454L72.952 14.9588H73.524L73.5374 14.9454H74.056L74.0691 14.9323H74.1489L74.4016 14.8525L74.5347 14.7593L74.6011 14.7328L74.7342 14.7194L74.8539 14.6795L75.0798 14.6396L75.1596 14.5997L75.3192 14.48L75.4922 14.3868L75.6517 14.3604L75.7979 14.294L75.9176 14.1877L76.0638 14.1079L76.2766 13.9483L76.6156 13.6225L76.6558 13.5293V13.3563L76.6823 13.2366V13.1304L76.6689 13.1169L76.6823 7.2261L76.6954 7.21269V6.20227L76.6823 6.18886V6.10908L76.6954 6.09567V6.01588L76.7356 5.92301L76.8217 5.83652L76.9015 5.79663L77.0212 5.76982H77.1144L77.1278 5.75673L77.5398 5.76982L77.5532 5.75673L78.8164 5.74333L78.8298 5.75673L78.9894 5.76982L79.0957 5.82312L79.1822 5.90961L79.2221 6.0028V6.33503L79.2355 6.34844V6.52142L79.2221 6.5345V10.6305L79.2355 10.6435V12.6516L79.2221 12.665L79.2355 15.883L79.2221 15.8964V16.2954L79.2355 16.3084V16.4814L79.2221 16.4948L79.209 16.6276L79.1423 16.7872L79.0427 16.8737L78.9096 16.9269L77.6729 16.94L77.6595 16.9534L77.3273 16.9668L77.3139 16.9802H77.1144L77.0212 16.9534L76.9283 16.9005L76.8153 16.7741L76.762 16.5347L76.7751 15.9363L76.7419 15.8897L76.689 15.8632H76.6357L76.5026 15.9296L76.3829 16.0359L76.1435 16.1422L76.0373 16.2219L75.9176 16.355L75.758 16.4482L75.4922 16.5146L75.3591 16.6078L75.1331 16.7141L74.8669 16.7409L74.5347 16.8207L74.1489 17.0198L74.056 17.0466L73.8696 17.06L73.8565 17.0731L72.9122 17.0865L72.8991 17.0996L72.2474 17.0865L72.234 17.0731H72.0214L72.008 17.06H71.8749L71.8618 17.0466H71.7153L71.4361 16.9802L71.3563 16.94L71.2634 16.8602L70.9973 16.754L70.8645 16.7275H70.7713L70.4257 16.6078L70.3459 16.5411L70.2393 16.4881L70.0398 16.4217L69.9335 16.355L69.7207 16.1422L69.5611 16.0493L69.3616 15.8498L69.2818 15.7965ZM108.856 20.81L108.81 20.7634L108.757 20.6702L108.743 20.5372L108.73 20.5241V19.2475L108.717 19.2341V19.1677L108.73 19.1543V19.0745L108.783 18.9548L108.883 18.8683L109.016 18.8284L109.402 18.8418L109.415 18.8549H110.346L110.359 18.8418H110.492L110.599 18.8154H110.785L110.997 18.7487L111.117 18.6823L111.263 18.5626L111.503 18.4962L111.529 18.4694L111.676 18.403L111.755 18.3497L111.908 18.1968L112.121 17.9575L112.321 17.6782L112.434 17.5917L112.547 17.4654L112.573 17.4124L112.587 17.2129L112.613 17.1331L112.812 16.7473L112.866 16.5478V16.2819L112.759 16.0161L112.666 15.8964L112.626 15.8166L112.6 15.6302L112.56 15.5374L112.52 15.3379L112.467 15.2447L112.321 15.0985L112.241 14.9122L112.188 14.7261L112.028 14.4867L112.002 14.3805L111.948 14.2739L111.908 14.0345L111.868 13.9547L111.709 13.7552L111.642 13.6356L111.589 13.4495L111.536 13.3432L111.443 13.2235L111.323 13.0107L111.257 12.7049L111.137 12.4787L111.017 12.3325L110.977 12.1196L110.898 11.9469L110.712 11.7207L110.685 11.6677L110.658 11.5212L110.592 11.3616L110.552 11.2021L110.406 10.9895L110.366 10.8165L110.246 10.5373L110.1 10.3643L109.993 10.0719L109.954 9.89897L109.794 9.6462L109.781 9.57982L109.714 9.44674L109.674 9.26067L109.621 9.16748L109.501 9.03471L109.408 8.86173L109.342 8.56908L109.222 8.34312L109.102 8.17014L109.062 7.95759L108.983 7.79801L108.783 7.53184L108.73 7.31929L108.677 7.21269L108.65 7.07993L108.597 6.97333L108.504 6.85365L108.477 6.70748L108.398 6.48152L108.331 6.34844L108.225 6.24216L108.145 6.10908L108.132 5.9495L108.185 5.84322L108.245 5.79663L108.378 5.75673H110.599L110.731 5.81003L110.791 5.85631L111.097 6.30854L111.163 6.61429L111.257 6.77386L111.403 6.96025L111.456 7.19961L111.509 7.31929L111.536 7.45205L111.682 7.69142L111.802 8.11716L111.868 8.23684L112.002 8.38301L112.081 8.54259L112.134 8.76854L112.214 8.91503L112.28 9.08769L112.36 9.20737L112.4 9.43365L112.52 9.6861L112.64 9.80578L112.693 9.88556L112.733 10.0585L112.826 10.3113L112.946 10.4709L112.972 10.5507L112.985 10.6968L113.025 10.8031V10.8698L113.065 11.0425L113.145 11.1622L113.278 11.2952L113.358 11.4414L113.424 11.7076L113.624 12.0797L113.65 12.2661L113.743 12.5852L113.929 12.8246L114.063 13.2366L114.096 13.2698H114.189L114.368 13.1039L114.462 12.9574L114.501 12.7049L114.528 12.6516L114.555 12.5055L114.581 12.4257L114.687 12.2661L114.714 12.133L114.781 11.9469L114.807 11.7606L114.847 11.6808L114.9 11.5081L115.02 11.3616L115.06 11.2818L115.166 10.9895L115.193 10.843L115.286 10.6968L115.406 10.4176L115.432 10.3244L115.445 10.1782L115.472 10.1249L115.512 9.93886L115.579 9.81918L115.645 9.7528L115.698 9.6462L115.778 9.40684L115.804 9.24727L115.911 9.07461L115.964 8.92812L116.03 8.80844L116.057 8.70216V8.62237L116.137 8.32971L116.177 8.24993L116.31 8.10376L116.376 7.97067L116.429 7.8245L116.456 7.62503L116.589 7.42556L116.696 7.19961L116.722 6.97333L116.762 6.85365L116.789 6.69408L116.815 6.6411L116.935 6.50801L117.001 6.37493L117.121 6.01588L117.327 5.82312L117.553 5.75673L119.455 5.74333L119.468 5.75673H119.535L119.654 5.81003L119.714 5.86971L119.741 5.92301L119.754 6.13556L119.648 6.50801L119.502 6.74737L119.382 7.1728L119.355 7.2261L119.209 7.38567L119.156 7.49195L119.103 7.63844L119.076 7.8778L118.996 8.10376L118.876 8.30322L118.743 8.74205L118.69 8.83525L118.597 8.92812L118.531 9.0478L118.464 9.22078L118.424 9.47354L118.384 9.53993L118.318 9.73939L118.225 9.89897L118.105 10.3113L118.065 10.3911L117.932 10.5239L117.892 10.6037L117.866 10.7233L117.813 10.843L117.786 11.016L117.693 11.1622L117.573 11.4283L117.533 11.5611L117.52 11.6808L117.44 11.9071L117.267 12.1464L117.134 12.6251L117.068 12.7049L117.001 12.8246L116.988 12.9044L116.922 13.064L116.882 13.2899L116.842 13.3697L116.815 13.476L116.762 13.5692L116.642 13.7023L116.496 14.1277L116.443 14.234L116.39 14.2873L116.337 14.3805L116.297 14.5665L116.257 14.6597L116.243 14.8324L116.217 14.939L116.15 15.0985L116.044 15.2313L115.964 15.3778L115.911 15.5639L115.884 15.6038L115.844 15.7767L115.698 16.0027L115.672 16.1358L115.618 16.2685L115.565 16.5347L115.472 16.7342L115.353 16.9068L115.273 17.173L115.193 17.3591L115.047 17.5321L115.007 17.758L114.967 17.8378L114.927 18.0239L114.887 18.1037L114.754 18.2632L114.581 18.6223L114.395 18.8217L114.342 19.0081L114.236 19.1942L114.049 19.4071L113.969 19.5532L113.856 19.6662L113.79 19.7061L113.604 19.9056L113.497 19.9719L113.298 20.1717L113.019 20.3179L112.806 20.5305L112.726 20.5707L112.566 20.5972L112.447 20.6505L112.287 20.69L112.154 20.7832L112.035 20.8365H111.981L111.782 20.8898L111.569 20.9029L111.556 20.9163L111.263 20.9428L111.157 20.9696H111.011L110.997 20.9827H110.891L110.878 20.9961L110.545 21.0226L110.532 21.036H110.266L110.253 21.0226H110.12L109.907 20.9827L109.628 20.9696L109.614 20.9562L109.335 20.9294L109.242 20.9029L109.029 20.8898L108.856 20.81ZM45.5186 16.9668L45.3326 16.9005L45.2327 16.814L45.1794 16.7074L45.1663 16.5746L45.1529 16.5612V15.1116L45.1663 15.0985V13.2366L45.1529 13.2235V12.1464L45.1663 12.133V10.9761L45.1529 10.9627L45.1663 5.98939L45.2062 5.8962L45.2793 5.82312L45.4389 5.75673H46.6092L46.6223 5.76982L47.3802 5.75673L47.4999 5.79663L47.5864 5.86971L47.6397 5.98939V6.06918L47.6528 6.08259L47.6397 6.34844L47.6528 6.36184V7.2261L47.6662 7.2395V14.2608L47.6796 14.2739V14.6463L47.6662 14.6597V16.1757L47.6528 16.1888L47.6397 16.6276L47.6132 16.7342L47.573 16.814L47.4734 16.9005L47.3802 16.94H47.0879L47.0611 16.9269L47.048 16.94H46.2233L46.2102 16.9534L45.5186 16.9668ZM99.1223 14.6929L99.3485 14.7328L99.5212 14.8525L99.774 14.9588H100.013L100.027 14.9722H100.173L100.186 14.9856L101.13 14.9987L101.144 14.9856H101.303L101.316 14.9722H101.556L101.569 14.9588H101.689L101.702 14.9454H101.875L102.128 14.8656L102.327 14.7462L102.567 14.706L102.832 14.5997L102.965 14.48L103.178 14.4002L103.404 14.2806L103.604 14.0945L103.763 14.0147L103.876 13.9148L103.916 13.7951V13.6624L103.93 13.649V13.4361L103.916 13.423V12.9309L103.93 12.9175L103.916 12.8645V9.43365L103.93 9.42025L103.916 8.76854L103.93 8.75546V8.60897L103.89 8.52918L103.817 8.4561L103.644 8.36322L103.484 8.21673L103.231 8.12386L103.165 8.08365L103.059 8.05716L102.886 7.92408L102.779 7.8845L102.646 7.8711L102.513 7.8312H102.327L102.234 7.80471L102.035 7.79131L102.021 7.7779L101.782 7.75142L101.769 7.73801H101.662L101.649 7.72493H101.396L101.383 7.73801L100.864 7.72493L100.851 7.73801H100.718L100.705 7.75142L100.386 7.7779L100.372 7.79131H100.186L100.173 7.80471L99.8672 7.8312L99.548 7.92408L99.4682 7.96429L99.3485 8.07056L99.189 8.11046L99.0693 8.16344L98.9496 8.24322L98.7766 8.4162L98.6968 8.4695L98.5108 8.54929L98.3975 8.70216L98.1581 8.91503L98.1051 9.00791L98.0518 9.15439L97.786 9.51344L97.7461 9.60631L97.7196 9.73939L97.4933 10.1517L97.4668 10.258V10.3643L97.44 10.484L97.4135 11.2952L97.4005 11.3087V11.9071L97.4135 11.9201V12.0931L97.4269 12.1065L97.44 12.5852L97.4668 12.6915L97.5466 12.8645L97.6794 13.0506L97.7062 13.1837L97.7726 13.3432L97.8792 13.4894L98.0253 13.649L98.0518 13.7023L98.0783 13.8484L98.1316 13.9416L98.3113 14.0546L98.5239 14.3071L98.7102 14.3738L98.9362 14.5866L99.1223 14.6929ZM88.3778 14.9058L88.4707 14.8656L88.6038 14.7593L88.7767 14.7194L88.9893 14.6396L89.1358 14.5598L89.2819 14.4271L89.415 14.3868L89.5213 14.3339L89.7342 14.2008L89.9202 14.0412L90.0664 13.9748L90.1529 13.8883L90.1794 13.835L90.2327 13.6091L90.2196 13.1837L90.2327 13.1702V12.3858L90.2461 12.3724V10.7766L90.2327 10.7632V9.02131L90.2461 9.00791V8.91503L90.2327 8.90163V8.60897L90.1928 8.52918L90.1197 8.4561L89.9202 8.38971L89.7342 8.21673L89.5079 8.12386L89.3084 8.07056L89.0825 7.91099L88.9229 7.8845L88.7633 7.8312H88.6701L88.5505 7.80471H88.3909L88.3778 7.79131H88.2048L88.1914 7.7779L87.9655 7.7645L87.8458 7.73801H87.1277L87.1143 7.75142H86.9681L86.9547 7.7645L86.7023 7.7779L86.6889 7.79131H86.3962L86.3831 7.80471L86.0905 7.84429L85.7847 7.97737L85.6117 8.09705L85.4522 8.12386L85.359 8.16344L85.2661 8.23014L85.0267 8.4561L84.8273 8.56237L84.7539 8.63578L84.661 8.79535L84.4615 8.98142L84.262 9.31397L84.076 9.51344L84.0492 9.56642L84.0227 9.77929L83.9828 9.88556L83.956 10.085L83.7833 10.5239L83.7568 10.7367L83.73 10.8165L83.7166 11.1092L83.7035 11.1223V11.774L83.7166 11.7874V11.9469L83.7434 12.0666L83.7568 12.306L83.8366 12.5718L83.9429 12.7579L83.956 12.891L84.0093 13.0905L84.0227 13.2634L84.076 13.3563L84.2356 13.5159L84.4481 13.8749L84.6077 14.0214L84.7606 14.2541L84.8802 14.3205L84.9999 14.3604L85.1863 14.5333L85.359 14.653L85.4786 14.6929L85.6516 14.7194L85.7314 14.7727L86.0506 14.9189L86.2634 14.9454L86.3432 14.9722L86.649 14.9856L86.6624 14.9987H87.593L87.6064 14.9856H87.8458L87.8592 14.9722H88.1116L88.3778 14.9058ZM17.2009 16.9202L17.1409 16.9802L16.9947 17.0332H15.1995L15.1861 17.0198H14.5079L14.4948 17.0067H13.4308L13.4177 17.0198H13.2846L13.0318 16.9534L12.7395 16.7805L12.6795 16.7208L12.5732 16.5478L12.4069 16.4217L12.3071 16.2819L12.1079 16.0825L12.0412 15.9363L11.9282 15.823L11.835 15.77L11.7753 15.71L11.6822 15.5505L11.4827 15.3111L11.2899 15.1183L11.1635 15.0188L11.004 14.8059L10.6982 14.5001L10.605 14.3671L10.4455 14.2075L10.3657 14.0744L10.1662 13.8749L10.0864 13.7288L9.84705 13.5028L9.75386 13.3432L9.55471 13.1568L9.48801 13.0506L9.24865 12.8377L9.12897 12.665L8.90301 12.4522L8.49067 11.9335L8.18492 11.6543L8.09173 11.4813L7.89226 11.3087L7.79939 11.1622L7.56003 10.9496L7.48024 10.7766V10.6037L7.50673 10.4974L7.56003 10.4042L7.6462 10.3311L8.05854 10.1051L8.21811 9.93216L8.41758 9.82588L8.59056 9.66631L8.75014 9.57312L9.13567 9.26737L9.32173 9.1611L9.5346 8.94822L9.73407 8.86844L9.96003 8.81514L10.0666 8.82854L10.1595 8.86844L10.2728 8.98142L10.3392 9.1011L10.5785 9.32705L10.6449 9.44674L10.9111 9.6861L10.9775 9.79269L11.1236 9.93886L11.2302 10.1249L11.6158 10.484L11.6557 10.5507L11.9215 10.843L12.2407 11.1491L12.294 11.2289L12.5598 11.5081L12.6396 11.6278L12.766 11.7274L12.879 11.8404L12.9323 11.9335L13.1317 12.1196L13.2249 12.2926L13.3245 12.3922L13.4643 12.4921L13.5441 12.6117L13.7301 12.7847L13.8099 12.9309L14.0758 13.1702L14.1157 13.25L14.2089 13.3697L14.3218 13.4562L14.6742 13.8219L14.7674 13.9681L15.06 14.2608L15.4855 14.766L15.7513 15.0188L15.8311 15.1384L16.0705 15.3644L16.1103 15.4308L16.3631 15.6571L16.4429 15.8032L16.629 15.9628L16.7088 16.1489L16.8086 16.2488L16.9283 16.3151L17.0145 16.4016L17.0812 16.5347L17.2143 16.7208L17.2274 16.8539L17.2009 16.9202ZM54.0358 14.7794L54.0626 14.8324L54.1223 14.8924L54.1622 14.9058H54.2553L54.3351 14.879H55.9574L55.9708 14.8656H56.5826L56.5957 14.8525L59.3352 14.8656L59.3483 14.8525L60.1063 14.8391L60.1197 14.826L60.4124 14.7858L60.5451 14.7462L60.7446 14.7328L60.8378 14.706H61.0108L61.1968 14.6664H61.2766L61.4228 14.6262L61.6756 14.5068L61.8217 14.4137L61.9947 14.3738L62.1144 14.3205L62.3139 14.2806L62.4868 14.1475L62.6863 14.0546L63.0252 13.7023L63.1184 13.5826L63.1717 13.4629L63.3444 13.2765L63.4242 12.9443L63.4376 12.6781L63.4507 12.665V12.0267L63.4376 12.0133V11.8404L63.4111 11.7341V11.5346L63.3709 11.3884L63.3045 11.2419L63.1449 11.0425L63.0386 10.8031L62.9656 10.73L62.806 10.6368L62.633 10.4508L62.4335 10.3844L62.2874 10.3046L62.0879 10.1185L62.0212 10.0783L61.9283 10.0518L61.7688 10.0388L61.7155 10.0119L61.4761 9.95897L61.3031 9.89227H61.2102L61.0507 9.85237L60.8378 9.83897L60.7446 9.81248L60.4788 9.79939L60.4653 9.78599H60.2394L60.226 9.77259H58.4308L58.4177 9.75918L54.3485 9.77259L54.2553 9.7461L54.1092 9.75918L54.0227 9.83259L53.9962 9.88556V10.1782L53.9828 10.1916V10.2845L53.9962 10.2979V14.3406L53.9828 14.3537V14.5665L54.0358 14.7794ZM34.209 14.2608L34.3018 14.4069L34.395 14.5132L34.6676 14.7328L34.8007 14.7858L34.9733 14.9323L35.0531 14.9588L35.2526 14.9722L35.3193 14.9987L35.5452 15.0121L35.5586 15.0251L35.7581 15.0385L35.7712 15.0519H35.9177L35.9308 15.0654H36.915L36.9281 15.0519H37.0746L37.2074 15.0251H37.3937L37.5265 14.9987H37.6596L37.673 14.9856H37.7793L37.8856 14.9588H38.0186L38.3777 14.8656L38.5373 14.7593L38.9761 14.6396L39.0559 14.5997L39.2419 14.4535L39.4414 14.3604L39.6144 14.3339L39.6808 14.3071L39.8538 14.1609L40.0267 14.0811L40.1397 13.9547L40.1528 13.9148V13.7422L40.1397 13.7288V13.2899L40.1528 13.2765V12.4123L40.1397 12.3989V12.306L40.1528 12.2926V12.1065L40.1397 12.0666L40.0931 12.0066L39.9868 11.9537H39.8936L39.6942 11.9932L36.5959 11.9801L36.5825 11.9932L36.3696 12.0066L36.1302 12.0599L35.9841 12.073L35.5318 12.246L35.3059 12.2728L35.0132 12.3526L34.8406 12.4854L34.6542 12.5785L34.2753 12.9443L34.209 13.0506L34.1822 13.3164L34.1423 13.4629V13.6356L34.1292 13.649V13.8219L34.1423 13.835V13.9148L34.1688 13.9815L34.1822 14.1676L34.209 14.2608Z" fill="currentColor"/>
+          </svg>
+        </span>
+        <span class="brand-divider" aria-hidden="true"></span>
+        <span class="suite-title">KB-SUITE-001 回归能力面板</span>
+        <div class="badge-row" id="topbar-badges"></div>
+      </div>
+      <div class="topbar-actions">
+        <button type="button" class="btn" id="btn-export-json">导出 JSON</button>
+        <button type="button" class="btn" id="btn-print">打印 / PDF</button>
+        <button type="button" class="btn" id="btn-theme-toggle">
+          <span class="theme-opt-dark">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            <span class="sr-only">切换为深色主题</span>
+            <span aria-hidden="true">深色</span>
+          </span>
+          <span class="theme-opt-light">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+            <span class="sr-only">切换为浅色主题</span>
+            <span aria-hidden="true">浅色</span>
+          </span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="shell">
+    <div id="preview-banner" class="preview-banner" hidden>
+      <div>
+        <strong id="preview-banner-title">模板预览模式</strong>
+        <span id="preview-banner-desc">当前展示内置样例结构；可通过「数据加载与离线导出」页签拖入任意 Run 的 JSON 数据即时生成报告。</span>
+      </div>
+      <div class="filter-group">
+        <button type="button" class="btn" data-demo="single">预览单 Case 态</button>
+        <button type="button" class="btn" data-demo="sample">预览混合四态</button>
+        <button type="button" class="btn" data-demo="full">预览全量 10 Case</button>
+      </div>
+    </div>
+
+    <!-- Hero Verdict + Dual Rings + Engineering Telemetry -->
+    <section class="hero-grid" aria-label="执行结论与环境遥测">
+      <div class="panel-card">
+        <div class="verdict-header">
+          <h1 class="verdict-title" id="verdict-title">执行结论加载中...</h1>
+          <span class="pill" id="verdict-pill">—</span>
+        </div>
+        <p class="verdict-summary" id="verdict-summary">—</p>
+
+        <div class="rings-row">
+          <div class="ring-box">
+            <svg class="ring-svg" viewBox="0 0 80 80" aria-hidden="true">
+              <circle class="ring-track" cx="40" cy="40" r="32" />
+              <circle class="ring-fill" id="ring-pass-circle" cx="40" cy="40" r="32" stroke="var(--kb-ok)" stroke-dasharray="201.06" stroke-dashoffset="201.06" />
+            </svg>
+            <div class="ring-meta">
+              <div class="ring-label">本次执行通过率</div>
+              <div class="ring-val tabular" id="ring-pass-val">—</div>
+              <div class="ring-sub tabular" id="ring-pass-sub">0 通过 / 0 已执行</div>
+            </div>
+          </div>
+
+          <div class="ring-box">
+            <svg class="ring-svg" viewBox="0 0 80 80" aria-hidden="true">
+              <circle class="ring-track" cx="40" cy="40" r="32" />
+              <circle class="ring-fill" id="ring-cov-circle" cx="40" cy="40" r="32" stroke="var(--kb-brand)" stroke-dasharray="201.06" stroke-dashoffset="201.06" />
+            </svg>
+            <div class="ring-meta">
+              <div class="ring-label">全集能力覆盖进度</div>
+              <div class="ring-val tabular" id="ring-cov-val">—</div>
+              <div class="ring-sub tabular" id="ring-cov-sub">0 / 23 能力标签 · 0 / 10 用例</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="dist-wrap">
+          <div class="dist-bar" id="dist-bar" aria-label="互斥四态比例条">
+            <div class="dist-seg ok" id="seg-passed" style="width:0%"></div>
+            <div class="dist-seg fail" id="seg-failed" style="width:0%"></div>
+            <div class="dist-seg block" id="seg-blocked" style="width:0%"></div>
+            <div class="dist-seg notrun" id="seg-notrun" style="width:100%"></div>
+          </div>
+          <div class="dist-legend" id="dist-legend">
+            <button type="button" class="legend-btn" data-status-filter="passed" aria-pressed="false"><span class="dot ok"></span>通过 <span class="tabular" id="cnt-passed">0</span></button>
+            <button type="button" class="legend-btn" data-status-filter="failed" aria-pressed="false"><span class="dot fail"></span>失败 <span class="tabular" id="cnt-failed">0</span></button>
+            <button type="button" class="legend-btn" data-status-filter="blocked" aria-pressed="false"><span class="dot block"></span>阻塞 <span class="tabular" id="cnt-blocked">0</span></button>
+            <button type="button" class="legend-btn" data-status-filter="not_run" aria-pressed="false"><span class="dot notrun"></span>未执行 <span class="tabular" id="cnt-notrun">10</span></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <h2 class="section-kicker">运行遥测与工程元数据（AGENTS.md 合规基线）</h2>
+        <div class="telemetry-grid" id="telemetry-grid"></div>
+      </div>
+    </section>
+
+    <!-- Primary Tabs -->
+    <section class="tabs-shell">
+      <div class="tablist" focusgroup="tablist nomemory" role="tablist" aria-label="回归报告视图" id="main-tablist">
+        <button type="button" role="tab" id="tab-overview" aria-selected="true" focusgroupstart>能力全景与用例面板</button>
+        <button type="button" role="tab" id="tab-audit" aria-selected="false">观测、计费与清理审计</button>
+        <button type="button" role="tab" id="tab-facts" aria-selected="false">事实、推断、缺口与校准</button>
+        <button type="button" role="tab" id="tab-loader" aria-selected="false">数据加载与离线导出</button>
+      </div>
+
+      <!-- Tab 1 -->
+      <div role="tabpanel" id="panel-overview" aria-labelledby="tab-overview" tabindex="0">
+        <div class="panel-inner">
+          <div class="panel-card">
+            <div class="verdict-header">
+              <h2 class="section-kicker" style="margin:0;">KuaiBuddy 六大核心能力域 × 23 项标准化能力图谱（点击域或标签交叉筛选）</h2>
+              <button type="button" class="btn" id="btn-clear-cap-filter" hidden>清除能力筛选</button>
+            </div>
+            <div class="cap-grid">
+              <div class="radar-wrap">
+                <svg class="radar-svg" id="radar-svg" viewBox="0 0 360 320" role="img" aria-label="KuaiBuddy 六大核心能力域覆盖与健康雷达图"></svg>
+                <div class="radar-legend">
+                  <span class="radar-swatch"><span class="swatch-box"></span>本次已验证覆盖度</span>
+                  <span class="radar-swatch"><span class="swatch-box ok"></span>已执行通过健康度</span>
+                </div>
+              </div>
+              <div class="domains-matrix" id="domains-matrix"></div>
+            </div>
+          </div>
+
+          <div class="filter-bar" aria-label="用例列表筛选控制栏">
+            <div class="filter-group">
+              <button type="button" class="btn" id="scope-all-btn" aria-pressed="true">全部用例 (10)</button>
+              <button type="button" class="btn" id="scope-exec-btn" aria-pressed="false">仅本次已执行 (0)</button>
+              <span id="active-tag-indicator" class="pill pill-brand" hidden></span>
+            </div>
+            <div class="filter-group">
+              <input type="search" class="search-input" id="case-search" placeholder="搜索用例、工具、runId 或 #tag" aria-label="搜索用例" />
+              <button type="button" class="btn" id="btn-toggle-all" commandfor="case-accordion" command="--toggle-all" aria-expanded="false">
+                <span class="expand">展开全部</span>
+                <span class="collapse">收起全部</span>
+              </button>
+            </div>
+          </div>
+
+          <section class="accordion" id="case-accordion" aria-label="测试用例执行明细列表"></section>
+        </div>
+      </div>
+
+      <!-- Tab 2 -->
+      <div role="tabpanel" id="panel-audit" aria-labelledby="tab-audit" hidden="until-found">
+        <div class="panel-inner">
+          <div class="panel-card">
+            <h2 class="section-kicker">Langfuse 轨迹与运行标识索引（按本次已执行用例）</h2>
+            <div tabindex="0" role="region" aria-labelledby="audit-trace-cap" class="table-wrapper">
+              <table>
+                <caption id="audit-trace-cap" class="sr-only-caption">Langfuse 轨迹与运行标识索引表</caption>
+                <thead>
+                  <tr>
+                    <th>用例</th>
+                    <th>状态</th>
+                    <th>threadId</th>
+                    <th>runId 列表</th>
+                    <th>耗时</th>
+                    <th>积分消耗</th>
+                    <th>关键指标</th>
+                  </tr>
+                </thead>
+                <tbody id="audit-trace-body"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="cards-2col">
+            <div class="panel-card">
+              <h2 class="section-kicker">已执行用例耗时横向对比</h2>
+              <div class="bar-list" id="perf-bars"></div>
+            </div>
+            <div class="panel-card">
+              <h2 class="section-kicker">测试数据自清理与零残留核验台账</h2>
+              <div class="bar-list" id="cleanup-list"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 3 -->
+      <div role="tabpanel" id="panel-facts" aria-labelledby="tab-facts" hidden="until-found">
+        <div class="panel-inner">
+          <div class="cards-2col">
+            <div class="panel-card">
+              <h2 class="section-kicker">已证实事实（Facts）</h2>
+              <ul class="fact-list" id="facts-confirmed"></ul>
+            </div>
+            <div class="panel-card">
+              <h2 class="section-kicker">待验证推断与风险（Inferences）</h2>
+              <ul class="fact-list" id="facts-inferences"></ul>
+            </div>
+            <div class="panel-card">
+              <h2 class="section-kicker">缺失证据与限制（Gaps & Limits）</h2>
+              <ul class="fact-list" id="facts-gaps"></ul>
+            </div>
+            <div class="panel-card">
+              <h2 class="section-kicker">实测口径校准与知识候选（Calibrations）</h2>
+              <ul class="fact-list" id="facts-calibrations"></ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 4 -->
+      <div role="tabpanel" id="panel-loader" aria-labelledby="tab-loader" hidden="until-found">
+        <div class="panel-inner">
+          <div class="panel-card">
+            <h2 class="section-kicker">拖入或选择 Run 数据 JSON 即时刷新报告</h2>
+            <div class="dropzone" id="json-dropzone">
+              <p style="margin:0 0 8px;font-weight:700;color:var(--kb-text-strong);">将任意一次运行的 <span class="mono">report-data.json</span> 拖放到此处</p>
+              <p style="margin:0 0 14px;font-size:13px;color:var(--kb-text-sec);">支持只含 1 个 Case 的单次试跑 JSON、多 Case 局部组合 JSON，或全量 10 Case JSON；未传入的 Case 自动标记为「未执行」，不拉低本次通过率。</p>
+              <div class="filter-group" style="justify-content:center;">
+                <label class="btn btn-primary" for="json-file-input">选择 JSON 文件</label>
+                <input type="file" id="json-file-input" accept="application/json,.json" hidden />
+                <button type="button" class="btn" id="btn-export-filled-html">下载填充后的独立 HTML</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel-card">
+            <h2 class="section-kicker">内置多态演示切换（快速检验单 Case / 局部 / 全量布局表现）</h2>
+            <div class="filter-group">
+              <button type="button" class="btn" data-demo="single">单 Case 专项态（1/10）</button>
+              <button type="button" class="btn" data-demo="sample">局部四态混合（4/10：通过/失败/阻塞/未执行）</button>
+              <button type="button" class="btn" data-demo="full">全量回归态（10/10）</button>
+              <button type="button" class="btn" id="btn-restore-embedded">还原页面初始内嵌数据</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Native modal detail drawer -->
+  <dialog id="case-drawer" closedby="any" aria-labelledby="drawer-title">
+    <div class="drawer-head">
+      <div>
+        <div class="badge-row" id="drawer-badges"></div>
+        <h1 id="drawer-title">用例详情</h1>
+      </div>
+      <form method="dialog">
+        <button type="submit" class="btn" value="close">关闭</button>
+      </form>
+    </div>
+    <div class="drawer-body" id="drawer-body"></div>
+  </dialog>
+
+  <div class="toast" id="toast" hidden role="status" aria-live="polite"></div>
+
+  <!-- Fixed JSON injection slot replaced by render_suite_report.py -->
+  <script id="kb-report-data" type="application/json">{
+  "schemaVersion": "kb-suite-001-report.v1",
+  "isPlaceholderDemo": true,
+  "meta": {
+    "suiteId": "KB-SUITE-001",
+    "taskId": "无（模板内置预览）",
+    "runId": "TEMPLATE-PREVIEW-PLACEHOLDER",
+    "env": "preprod",
+    "langfuseEnv": "prd",
+    "executionMode": "partial",
+    "startedAt": "2026-11-26 09:00:00 +08:00",
+    "finishedAt": "2026-11-26 09:02:15 +08:00",
+    "durationMs": 135000,
+    "gitCommit": "7fb5d4bd285dc6e82bf49c7dfdd785f7bbc96374",
+    "worktreeDirty": false,
+    "modelSummary": "示例占位（等待注入真实 Run 数据）",
+    "pointsBefore": 1000.0,
+    "pointsAfter": 985.5,
+    "pointsConsumed": 14.5,
+    "cleanupStatus": "passed",
+    "cleanupNote": "模板内置局部预览示例（请使用 render_suite_report.py 注入真实运行数据）"
+  },
+  "cases": [
+    {
+      "id": "CASE-01",
+      "status": "passed",
+      "summary": "演示条目：5 轮串行对话均正常命中 Prompt Cache（首步冷启动后跨轮命中率 >= 95%）。",
+      "startedAt": "2026-11-26 09:00:05 +08:00",
+      "durationMs": 42000,
+      "threadIds": ["thread_demo_case01"],
+      "runIds": ["run_demo_case01_t1", "run_demo_case01_t2"],
+      "metrics": {
+        "cacheHitRate": 97.4,
+        "points": 2.8
+      },
+      "cleanup": {
+        "status": "not_needed",
+        "note": "只读业务查询，无持久化写操作残留"
+      },
+      "steps": [
+        {
+          "name": "第 1 轮：Skill 加载冷启动",
+          "status": "passed",
+          "expected": "命中 #skill-load 并稳定写入前缀缓存",
+          "actual": "第 1 轮后轮内命中率上升至 94.2%",
+          "evidence": "events.json + Langfuse trace"
+        },
+        {
+          "name": "第 2–5 轮：多轮指代消解与纯文本总结",
+          "status": "passed",
+          "expected": "跨轮命中率 >= 95%，历史已有结果时不重复调工具",
+          "actual": "第 3/5 轮首步命中率 97.4%，无多余工具调用",
+          "evidence": "Langfuse usageDetails"
+        }
+      ],
+      "evidencePaths": ["tests/cases/KB-SUITE-001.md"]
+    },
+    {
+      "id": "CASE-08",
+      "status": "passed",
+      "summary": "演示条目：断连 /observe 重放、并发 4006 拦截、/cancel 真中断与四方积分对账一致。",
+      "startedAt": "2026-11-26 09:00:52 +08:00",
+      "durationMs": 93000,
+      "threadIds": ["thread_demo_case08"],
+      "runIds": ["run_demo_case08_r1", "run_demo_case08_r2", "run_demo_case08_r3"],
+      "metrics": {
+        "points": 11.7
+      },
+      "cleanup": {
+        "status": "passed",
+        "note": "中断后哨兵文件 ABSENT，沙箱无残留"
+      },
+      "steps": [
+        {
+          "name": "Step 1：SSE 断连重连 + 并发 4006",
+          "status": "passed",
+          "expected": "原 Run 不断执行且并发请求被拦截返 4006",
+          "actual": "/run/observe 从头重放并完整结束，并发请求零扣费",
+          "evidence": "SSE events + /points/records"
+        },
+        {
+          "name": "Step 2–4：运行中 /cancel + 四方对账",
+          "status": "passed",
+          "expected": "终止于 cancelled，后续续问不锁死，账本完全闭合",
+          "actual": "write_file=0，账本 balanceDelta == CONSUME == sum(-DEDUCT)",
+          "evidence": "Langfuse + /points/consumptions"
+        }
+      ],
+      "evidencePaths": ["tests/cases/KB-SUITE-001.md"]
+    }
+  ],
+  "notes": {
+    "facts": [
+      "模板直接内嵌了 KB-SUITE-001 全集 10 个用例与 6 大能力域 23 项能力定义。",
+      "当仅传入 1 个或部分用例结果时，其余用例自动标注为「未执行」，不计入失败，也不拉低本次执行通过率。"
+    ],
+    "inferences": [
+      "当前页面加载的是内嵌模板演示数据；实际报告需由 render_suite_report.py 注入对应 Run 的 JSON 数据生成。"
+    ],
+    "gaps": [
+      "未执行用例仅展示规范目标、能力标签与跨环境执行命令模板。"
+    ],
+    "calibrations": [
+      "支持在「数据加载与离线导出」页签中拖入 report-data.json 实时切换视图或导出独立 HTML 文件。"
+    ]
+  }
+}</script>
+
+  <script>
+    (function () {
+      "use strict";
+
+      /* =====================================================================
+         Static catalog of KB-SUITE-001 (10 cases x 6 domains x 23 tags)
+         ===================================================================== */
+      const SUITE_DOMAINS = [
+        {
+          id: "core-chat",
+          name: "核心对话与缓存引擎",
+          shortName: "对话与缓存",
+          tags: [
+            { tag: "prompt-cache", label: "前缀缓存命中率", caseId: "CASE-01" },
+            { tag: "skill-load", label: "Skill 动态加载", caseId: "CASE-01" },
+            { tag: "tool-execute", label: "多步工具循环", caseId: "CASE-01" },
+            { tag: "multi-turn-context", label: "多轮上下文记忆", caseId: "CASE-01" },
+            { tag: "no-redundant-tool", label: "防重复调工具", caseId: "CASE-01" },
+            { tag: "sse-stream-followup", label: "流式分离与追问", caseId: "CASE-01" }
+          ]
+        },
+        {
+          id: "memory-context",
+          name: "长上下文与记忆底座",
+          shortName: "记忆与压缩",
+          tags: [
+            { tag: "context-compaction", label: "上下文压缩保真", caseId: "CASE-02" },
+            { tag: "large-file-read", label: "大文件分段读取", caseId: "CASE-02" },
+            { tag: "long-memory", label: "跨会话长期记忆", caseId: "CASE-03" }
+          ]
+        },
+        {
+          id: "runtime-billing",
+          name: "运行治理与积分安全",
+          shortName: "治理与积分",
+          tags: [
+            { tag: "write-confirm", label: "写闭环与越权拦截", caseId: "CASE-03" },
+            { tag: "error-fallback", label: "工具异常诚实兜底", caseId: "CASE-03" },
+            { tag: "run-control", label: "断连/并发/真中断", caseId: "CASE-08" },
+            { tag: "points-billing", label: "积分四方精确对账", caseId: "CASE-08" }
+          ]
+        },
+        {
+          id: "sandbox-tools",
+          name: "沙箱工程与联网工具",
+          shortName: "沙箱与联网",
+          tags: [
+            { tag: "fs-code-tools", label: "文件编辑检索工具链", caseId: "CASE-07" },
+            { tag: "web-fetch", label: "公网抓取与搜索隔离", caseId: "CASE-07" },
+            { tag: "todo-plan", label: "结构化待办维护", caseId: "CASE-07" },
+            { tag: "tool-result-eviction", label: "超长卸载与超时拦截", caseId: "CASE-07" }
+          ]
+        },
+        {
+          id: "multimodal-auto",
+          name: "多模态与自动化执行",
+          shortName: "多模态与定时",
+          tags: [
+            { tag: "agent-switch", label: "子 Agent 派发协作", caseId: "CASE-04" },
+            { tag: "multimodal-file", label: "产物入库与识图解析", caseId: "CASE-04" },
+            { tag: "scheduled-task", label: "定时任务与触发隔离", caseId: "CASE-06" },
+            { tag: "image-gen", label: "文/图生图与 COS 闭环", caseId: "CASE-10" }
+          ]
+        },
+        {
+          id: "open-assets",
+          name: "开放连接与个人资产",
+          shortName: "MCP与个人Skill",
+          tags: [
+            { tag: "mcp-connector", label: "个人 MCP 全生命周期", caseId: "CASE-05" },
+            { tag: "user-skill-crud", label: "个人 Skill 增删启停隔离", caseId: "CASE-09" }
+          ]
+        }
+      ];
+
+      const SUITE_CASES = [
+        {
+          id: "CASE-01",
+          title: "Skill 加载与多轮工具调用 Prompt 缓存命中率验证",
+          priority: "P1",
+          domainId: "core-chat",
+          tags: ["prompt-cache", "skill-load", "tool-execute", "multi-turn-context", "no-redundant-tool", "sse-stream-followup"],
+          goal: "验证加载 Skill、连续工具调用、工具结果入历史后纯文本追问及长上下文二次调用下的前缀缓存命中率稳定性。",
+          cmdTemplate: 'KB_ENV_FILE=.env.<ENV> node .agents/skills/kb-test-execution/scripts/kb_e2e.js ask "/快商通 IM 助手" --out ".runtime/scratch/case01/turn-1" --json'
+        },
+        {
+          id: "CASE-02",
+          title: "上下文压缩触发与关键信息保真验证",
+          priority: "P1",
+          domainId: "memory-context",
+          tags: ["context-compaction", "large-file-read"],
+          goal: "验证达到环境 trigger-tokens 时精准触发 history_compaction、初始锚点实体不失忆及压缩后缓存重建。",
+          cmdTemplate: 'KB_ENV_FILE=.env.<ENV> node .agents/skills/kb-test-execution/scripts/kb_e2e.js ask "请记住以下本次任务的三个核心锚点信息..." --out ".runtime/scratch/case02/turn-1" --json'
+        },
+        {
+          id: "CASE-03",
+          title: "跨会话长期记忆闭环与异常越权兜底验证",
+          priority: "P1",
+          domainId: "memory-context",
+          tags: ["long-memory", "error-fallback", "write-confirm"],
+          goal: "验证长期记忆写入、新会话自动召回、精准清理闭环，以及文件不存在/非法任务 ID 删除拦截时诚实报错不编造。",
+          cmdTemplate: 'KB_ENV_FILE=.env.<ENV> node .agents/skills/kb-test-execution/scripts/kb_e2e.js ask "请调用 memory_save 记住一条长期偏好..." --out ".runtime/scratch/case03/turn-1" --json'
+        },
+        {
+          id: "CASE-04",
+          title: "子 Agent 派发、识图与文件产物交付验证",
+          priority: "P1",
+          domainId: "multimodal-auto",
+          tags: ["agent-switch", "multimodal-file"],
+          goal: "验证 agent_spawn 派发生成图文产物、save_image_to_library / save_to_library 入库与 analyze_image 识图闭环。",
+          cmdTemplate: 'KB_ENV_FILE=.env.<ENV> node .agents/skills/kb-test-execution/scripts/kb_e2e.js ask "请使用 agent_spawn 派发一个子 Agent..." --out ".runtime/scratch/case04/turn-1" --json'
+        },
+        {
+          id: "CASE-05",
+          title: "个人 MCP 连接器全生命周期与安全边界验证",
+          priority: "P1",
+          domainId: "open-assets",
+          tags: ["mcp-connector"],
+          goal: "验证 SSRF 8004 拦截、远端工具发现与最小授权持久化、对话内前缀调用、异常兜底、停用隔离与物理删除自清理。",
+          cmdTemplate: "参照 tests/cases/KB-SUITE-001.md CASE-05 执行模板串联 /web/agent/api/v1/mcp-connector/* 与对话"
+        },
+        {
+          id: "CASE-06",
+          title: "定时任务全生命周期管理与触发隔离验证",
+          priority: "P1",
+          domainId: "multimodal-auto",
+          tags: ["scheduled-task"],
+          goal: "验证 7 个定时任务内置工具、XXL-JOB 到点执行、新指令生效及 sched_* 会话隔离（无长期记忆与定时工具）。",
+          cmdTemplate: 'KB_ENV_FILE=.env.<ENV> node .agents/skills/kb-test-execution/scripts/kb_e2e.js ask "请调用 create_schedule 创建一个每日定时任务..." --out ".runtime/scratch/case06/turn-1" --json'
+        },
+        {
+          id: "CASE-07",
+          title: "框架文件检索、任务规划、联网抓取与大输出卸载验证",
+          priority: "P1",
+          domainId: "sandbox-tools",
+          tags: ["fs-code-tools", "web-fetch", "todo-plan", "tool-result-eviction"],
+          goal: "验证 todo_write、web_fetch、文件检索编辑工具链、90k 输出自动卸载预览与 timeout=600 前置拦截及残余清理。",
+          cmdTemplate: 'KB_ENV_FILE=.env.<ENV> node .agents/skills/kb-test-execution/scripts/kb_e2e.js ask "请先调用 todo_write 创建包含 4 个步骤的待办清单..." --out ".runtime/scratch/case07/turn-1" --json'
+        },
+        {
+          id: "CASE-08",
+          title: "运行态控制（断连重连／并发拦截／真中断）与积分计费对账验证",
+          priority: "P1",
+          domainId: "runtime-billing",
+          tags: ["run-control", "points-billing"],
+          goal: "验证断连不断执行与 /run/observe 重放、并发 4006 拦截、/run/cancel 防写入泄漏与续问防锁死，以及账户/SSE/汇总/明细四方对账。",
+          cmdTemplate: "参照 tests/cases/KB-SUITE-001.md CASE-08 执行模板串联 /service/agent/api/v1/agent/run* 与 /points/*"
+        },
+        {
+          id: "CASE-09",
+          title: "个人 Skill 全生命周期与隔离边界验证",
+          priority: "P1",
+          domainId: "open-assets",
+          tags: ["user-skill-crud"],
+          goal: "验证 4102/4104 包与全局重名校验、对话创建导出与内置技能隔离、跨会话 _import 静默加载、同名覆盖与启停删除防复活。",
+          cmdTemplate: "参照 tests/cases/KB-SUITE-001.md CASE-09 执行模板串联 /web/agent/api/v1/skill/user* 与对话"
+        },
+        {
+          id: "CASE-10",
+          title: "AI 图像生成自动入库与任务附件发现验证",
+          priority: "P1",
+          domainId: "multimodal-auto",
+          tags: ["image-gen"],
+          goal: "验证 text_to_image 与链式 image_to_image 自动结算入库（免调 save_image_to_library）、list_attachments 与删后 COS 404。",
+          cmdTemplate: 'KB_ENV_FILE=.env.<ENV> node .agents/skills/kb-test-execution/scripts/kb_e2e.js ask "请调用 text_to_image 生成 1 张极简测试图..." --out ".runtime/scratch/case10/turn-1" --json'
+        }
+      ];
+
+      const STATUS_META = {
+        passed: { label: "通过", pillClass: "pill-ok", order: 2 },
+        failed: { label: "失败", pillClass: "pill-fail", order: 0 },
+        blocked: { label: "阻塞", pillClass: "pill-block", order: 1 },
+        not_run: { label: "未执行", pillClass: "pill-notrun", order: 3 }
+      };
+
+      const ENV_BADGE_MAP = {
+        test: { text: "TEST 测试环境", cls: "pill-brand" },
+        preprod: { text: "PREPROD 预生产", cls: "pill-block" },
+        prod: { text: "PROD 生产环境", cls: "pill-fail" }
+      };
+
+      const CLEANUP_LABEL = {
+        passed: "已自清理无残留",
+        failed: "清理失败或存在残留",
+        partial: "部分清理",
+        not_needed: "只读无需清理",
+        unknown: "未核验"
+      };
+
+      /* =====================================================================
+         State
+         ===================================================================== */
+      const EMBEDDED_JSON_TEXT = document.getElementById("kb-report-data").textContent.trim();
+      let currentData = safeParseJson(EMBEDDED_JSON_TEXT) || { schemaVersion: "kb-suite-001-report.v1", meta: {}, cases: [] };
+      const uiState = {
+        scopeOnlyExecuted: false,
+        statusFilter: null,   // null | "passed" | "failed" | "blocked" | "not_run"
+        tagFilter: null,      // null | string
+        domainFilter: null,   // null | string
+        searchQuery: "",
+        autoInitializedScope: false
+      };
+
+      /* =====================================================================
+         Utilities
+         ===================================================================== */
+      function safeParseJson(txt) {
+        try { return JSON.parse(txt); } catch (_) { return null; }
+      }
+
+      function escHtml(v) {
+        return String(v == null ? "" : v)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function formatDuration(ms) {
+        if (ms == null || Number.isNaN(Number(ms))) return "—";
+        const n = Number(ms);
+        if (n < 1000) return `${Math.round(n)} ms`;
+        if (n < 60000) return `${(n / 1000).toFixed(1)} s`;
+        const m = Math.floor(n / 60000);
+        const s = ((n % 60000) / 1000).toFixed(0);
+        return `${m}m ${s}s`;
+      }
+
+      function showToast(msg) {
+        const el = document.getElementById("toast");
+        el.textContent = msg;
+        el.hidden = false;
+        clearTimeout(showToast._t);
+        showToast._t = setTimeout(() => { el.hidden = true; }, 2200);
+      }
+
+      function copyText(text) {
+        if (!text) return;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(() => showToast("已复制到剪贴板")).catch(() => fallbackCopy(text));
+        } else {
+          fallbackCopy(text);
+        }
+      }
+
+      function fallbackCopy(text) {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+          document.execCommand("copy");
+          showToast("已复制到剪贴板");
+        } catch (_) {
+          showToast("复制失败，请手动选中复制");
+        }
+        ta.remove();
+      }
+
+      function normalizeReport(raw) {
+        const meta = Object.assign({
+          suiteId: "KB-SUITE-001",
+          taskId: "无（单次请求）",
+          runId: "—",
+          env: "preprod",
+          langfuseEnv: "prd",
+          startedAt: "—",
+          finishedAt: "—",
+          durationMs: null,
+          gitCommit: "—",
+          worktreeDirty: null,
+          modelSummary: "—",
+          pointsBefore: null,
+          pointsAfter: null,
+          pointsConsumed: null,
+          cleanupStatus: "unknown",
+          cleanupNote: ""
+        }, (raw && raw.meta) || {});
+
+        const byId = new Map();
+        const rawCases = Array.isArray(raw && raw.cases) ? raw.cases : [];
+        for (const item of rawCases) {
+          if (item && item.id) byId.set(item.id, item);
+        }
+
+        const mergedCases = SUITE_CASES.map((def) => {
+          const supplied = byId.get(def.id) || {};
+          const st = STATUS_META[supplied.status] ? supplied.status : "not_run";
+          return Object.assign({}, def, supplied, {
+            id: def.id,
+            title: def.title,
+            priority: def.priority,
+            domainId: def.domainId,
+            tags: def.tags,
+            status: st,
+            threadIds: Array.isArray(supplied.threadIds) ? supplied.threadIds : [],
+            runIds: Array.isArray(supplied.runIds) ? supplied.runIds : [],
+            metrics: supplied.metrics || {},
+            steps: Array.isArray(supplied.steps) ? supplied.steps : [],
+            calibrations: Array.isArray(supplied.calibrations) ? supplied.calibrations : [],
+            evidencePaths: Array.isArray(supplied.evidencePaths) ? supplied.evidencePaths : [],
+            cleanup: supplied.cleanup || null
+          });
+        });
+
+        const counts = { passed: 0, failed: 0, blocked: 0, not_run: 0 };
+        for (const c of mergedCases) counts[c.status]++;
+        const executed = mergedCases.length - counts.not_run;
+
+        const caseStatusMap = new Map(mergedCases.map((c) => [c.id, c.status]));
+        let totalTags = 0;
+        let verifiedTags = 0;
+        let passedTags = 0;
+        const domainStats = SUITE_DOMAINS.map((dom) => {
+          let domExec = 0;
+          let domPass = 0;
+          const tags = dom.tags.map((t) => {
+            totalTags++;
+            const st = caseStatusMap.get(t.caseId) || "not_run";
+            if (st !== "not_run") {
+              verifiedTags++;
+              domExec++;
+            }
+            if (st === "passed") {
+              passedTags++;
+              domPass++;
+            }
+            return Object.assign({}, t, { status: st });
+          });
+          return {
+            id: dom.id,
+            name: dom.name,
+            shortName: dom.shortName,
+            total: tags.length,
+            executed: domExec,
+            passed: domPass,
+            covPct: tags.length ? Math.round((domExec / tags.length) * 100) : 0,
+            passPct: tags.length ? Math.round((domPass / tags.length) * 100) : 0,
+            tags
+          };
+        });
+
+        return {
+          isPlaceholderDemo: Boolean(raw && raw.isPlaceholderDemo),
+          meta,
+          cases: mergedCases,
+          counts,
+          executed,
+          totalCases: mergedCases.length,
+          totalTags,
+          verifiedTags,
+          passedTags,
+          domainStats,
+          notes: Object.assign({ facts: [], inferences: [], gaps: [], calibrations: [] }, (raw && raw.notes) || {})
+        };
+      }
+
+      /* =====================================================================
+         Rendering
+         ===================================================================== */
+      function renderAll(raw, options) {
+        currentData = raw;
+        const model = normalizeReport(raw);
+        if (!uiState.autoInitializedScope || (options && options.resetScope)) {
+          uiState.scopeOnlyExecuted = model.executed > 0 && model.executed < model.totalCases;
+          uiState.statusFilter = null;
+          uiState.tagFilter = null;
+          uiState.domainFilter = null;
+          uiState.searchQuery = "";
+          document.getElementById("case-search").value = "";
+          uiState.autoInitializedScope = true;
+        }
+
+        renderHeaderAndBanner(model);
+        renderHeroAndTelemetry(model);
+        renderRadar(model.domainStats);
+        renderDomainMatrix(model.domainStats);
+        renderCaseAccordion(model);
+        renderAuditTab(model);
+        renderFactsTab(model);
+      }
+
+      function renderHeaderAndBanner(model) {
+        const badgesEl = document.getElementById("topbar-badges");
+        const envCfg = ENV_BADGE_MAP[model.meta.env] || { text: String(model.meta.env || "ENV").toUpperCase(), cls: "pill" };
+        let scopeText = "模板预览（未执行）";
+        let scopeCls = "pill-notrun";
+        if (model.executed === 1) {
+          const single = model.cases.find((c) => c.status !== "not_run");
+          scopeText = `单用例专项 · ${single ? single.id : "1/10"}`;
+          scopeCls = "pill-brand";
+        } else if (model.executed > 1 && model.executed < model.totalCases) {
+          scopeText = `局部组合 · ${model.executed}/${model.totalCases} 用例`;
+          scopeCls = "pill-brand";
+        } else if (model.executed === model.totalCases) {
+          scopeText = `全量回归 · ${model.totalCases}/${model.totalCases} 用例`;
+          scopeCls = "pill-ok";
+        }
+
+        badgesEl.innerHTML = [
+          `<span class="pill ${envCfg.cls}">${escHtml(envCfg.text)}</span>`,
+          `<span class="pill ${scopeCls}">${escHtml(scopeText)}</span>`,
+          model.isPlaceholderDemo ? `<span class="pill pill-block">演示数据</span>` : ""
+        ].join("");
+
+        document.getElementById("preview-banner").hidden = !model.isPlaceholderDemo;
+      }
+
+      function renderHeroAndTelemetry(model) {
+        const { counts, executed, totalCases, verifiedTags, totalTags } = model;
+        const verdictTitle = document.getElementById("verdict-title");
+        const verdictPill = document.getElementById("verdict-pill");
+        const verdictSummary = document.getElementById("verdict-summary");
+
+        if (executed === 0) {
+          verdictTitle.textContent = "尚无已执行用例结果";
+          verdictPill.className = "pill pill-notrun";
+          verdictPill.textContent = "待执行";
+          verdictSummary.textContent = "当前报告尚未注入已执行用例数据；全部 10 个回归用例处于未执行状态。";
+        } else if (counts.failed > 0) {
+          verdictTitle.textContent = `发现 ${counts.failed} 项失败用例`;
+          verdictPill.className = "pill pill-fail";
+          verdictPill.textContent = "存在失败";
+          verdictSummary.textContent = `本次共执行 ${executed}/${totalCases} 个用例（通过 ${counts.passed}、失败 ${counts.failed}、阻塞 ${counts.blocked}），未执行的 ${counts.not_run} 项不计入失败。`;
+        } else if (counts.blocked > 0) {
+          verdictTitle.textContent = `无失败，但存在 ${counts.blocked} 项阻塞`;
+          verdictPill.className = "pill pill-block";
+          verdictPill.textContent = "部分阻塞";
+          verdictSummary.textContent = `已执行 ${executed}/${totalCases} 个用例中 ${counts.passed} 项通过、${counts.blocked} 项因前置条件或环境原因阻塞。`;
+        } else {
+          const label = executed === 1 ? "单用例专项全部通过" : (executed < totalCases ? "局部执行全部通过" : "全量回归全部通过");
+          verdictTitle.textContent = label;
+          verdictPill.className = "pill pill-ok";
+          verdictPill.textContent = "全部通过";
+          verdictSummary.textContent = `本次执行 ${executed}/${totalCases} 个用例全部通过（验证 ${verifiedTags}/${totalTags} 个能力标签），其余 ${counts.not_run} 项本次未执行。`;
+        }
+
+        const CIRC = 2 * Math.PI * 32; // 201.0619
+        const passCircle = document.getElementById("ring-pass-circle");
+        const passVal = document.getElementById("ring-pass-val");
+        const passSub = document.getElementById("ring-pass-sub");
+
+        if (executed === 0) {
+          passVal.textContent = "—";
+          passCircle.style.strokeDashoffset = String(CIRC);
+          passCircle.setAttribute("stroke", "var(--kb-notrun)");
+        } else {
+          const pct = Math.round((counts.passed / executed) * 100);
+          passVal.textContent = `${pct}%`;
+          passCircle.style.strokeDashoffset = String(CIRC * (1 - counts.passed / executed));
+          passCircle.setAttribute("stroke", counts.failed > 0 ? "var(--kb-fail)" : (counts.blocked > 0 ? "var(--kb-block)" : "var(--kb-ok)"));
+        }
+        passSub.textContent = `${counts.passed} 通过 / ${executed} 已执行`;
+
+        const covPct = Math.round((verifiedTags / totalTags) * 100);
+        document.getElementById("ring-cov-val").textContent = `${covPct}%`;
+        document.getElementById("ring-cov-circle").style.strokeDashoffset = String(CIRC * (1 - verifiedTags / totalTags));
+        document.getElementById("ring-cov-sub").textContent = `${verifiedTags} / ${totalTags} 能力标签 · ${executed} / ${totalCases} 用例`;
+
+        document.getElementById("seg-passed").style.width = `${(counts.passed / totalCases) * 100}%`;
+        document.getElementById("seg-failed").style.width = `${(counts.failed / totalCases) * 100}%`;
+        document.getElementById("seg-blocked").style.width = `${(counts.blocked / totalCases) * 100}%`;
+        document.getElementById("seg-notrun").style.width = `${(counts.not_run / totalCases) * 100}%`;
+
+        document.getElementById("cnt-passed").textContent = counts.passed;
+        document.getElementById("cnt-failed").textContent = counts.failed;
+        document.getElementById("cnt-blocked").textContent = counts.blocked;
+        document.getElementById("cnt-notrun").textContent = counts.not_run;
+
+        for (const btn of document.querySelectorAll("[data-status-filter]")) {
+          btn.setAttribute("aria-pressed", String(uiState.statusFilter === btn.dataset.statusFilter));
+        }
+
+        // Telemetry grid
+        const m = model.meta;
+        const pointsStr = m.pointsConsumed != null
+          ? `${m.pointsConsumed} 积分${m.pointsBefore != null && m.pointsAfter != null ? `（${m.pointsBefore} → ${m.pointsAfter}）` : ""}`
+          : "未统计";
+        const worktreeStr = m.worktreeDirty === null ? "未知" : (m.worktreeDirty ? "有未提交变更" : "工作树干净");
+        const cleanLabel = CLEANUP_LABEL[m.cleanupStatus] || m.cleanupStatus || "未核验";
+
+        const items = [
+          { label: "Run ID", val: m.runId, copy: m.runId, mono: true, wide: true },
+          { label: "目标环境 / Langfuse", val: `${String(m.env || "—").toUpperCase()} / ${m.langfuseEnv || "—"}` },
+          { label: "执行时间窗与耗时", val: `${m.startedAt || "—"}（${formatDuration(m.durationMs)}）` },
+          { label: "工作区 Git Commit", val: `${String(m.gitCommit || "—").slice(0, 12)} · ${worktreeStr}`, copy: m.gitCommit, mono: true },
+          { label: "主模型 / 积分变动", val: `${m.modelSummary || "—"} · ${pointsStr}` },
+          { label: "Task ID", val: m.taskId || "无（单次请求）" },
+          { label: "数据自清理结论", val: `${cleanLabel}${m.cleanupNote ? `（${m.cleanupNote}）` : ""}` }
+        ];
+
+        document.getElementById("telemetry-grid").innerHTML = items.map((it) => `
+          <div class="tele-item${it.wide ? " wide" : ""}">
+            <div class="tele-label">${escHtml(it.label)}</div>
+            <div class="tele-val${it.mono ? " mono" : ""}">
+              <span>${escHtml(it.val)}</span>
+              ${it.copy && it.copy !== "—" ? `<button type="button" class="copy-mini" data-copy="${escHtml(it.copy)}">复制</button>` : ""}
+            </div>
+          </div>
+        `).join("");
+      }
+
+      function renderRadar(domainStats) {
+        const svg = document.getElementById("radar-svg");
+        const cx = 180;
+        const cy = 160;
+        const R = 100;
+        const n = domainStats.length;
+
+        function pointAt(idx, ratio) {
+          const angle = -Math.PI / 2 + (idx * 2 * Math.PI) / n;
+          return [cx + Math.cos(angle) * R * ratio, cy + Math.sin(angle) * R * ratio];
+        }
+
+        const rings = [0.25, 0.5, 0.75, 1.0].map((r) => {
+          const pts = domainStats.map((_, i) => pointAt(i, r).map((v) => v.toFixed(1)).join(",")).join(" ");
+          return `<polygon points="${pts}" fill="none" stroke="var(--kb-radar-grid)" stroke-width="1" stroke-dasharray="${r < 1 ? "3 3" : ""}" />`;
+        }).join("");
+
+        const axes = domainStats.map((_, i) => {
+          const [x, y] = pointAt(i, 1);
+          return `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="var(--kb-radar-grid)" stroke-width="1" />`;
+        }).join("");
+
+        const covPts = domainStats.map((d, i) => pointAt(i, Math.max(0.03, d.covPct / 100)).map((v) => v.toFixed(1)).join(",")).join(" ");
+        const passPts = domainStats.map((d, i) => pointAt(i, Math.max(0.03, d.passPct / 100)).map((v) => v.toFixed(1)).join(",")).join(" ");
+
+        const nodes = domainStats.map((d, i) => {
+          const [lx, ly] = pointAt(i, 1.24);
+          const [dx, dy] = pointAt(i, d.covPct / 100);
+          let anchor = "middle";
+          if (Math.abs(lx - cx) > 15) anchor = lx > cx ? "start" : "end";
+          const active = uiState.domainFilter === d.id;
+          return `
+            <circle cx="${dx.toFixed(1)}" cy="${dy.toFixed(1)}" r="${d.executed > 0 ? 4.5 : 3}" fill="${d.passed === d.executed && d.executed > 0 ? "var(--kb-ok)" : (d.executed > 0 ? "var(--kb-brand)" : "var(--kb-notrun)")}" stroke="var(--kb-surface)" stroke-width="1.5" />
+            <g class="radar-axis-label" data-domain-click="${escHtml(d.id)}" style="cursor:pointer;">
+              <text x="${lx.toFixed(1)}" y="${(ly - 2).toFixed(1)}" text-anchor="${anchor}" font-size="11.5" font-weight="${active ? "700" : "600"}" fill="${active ? "var(--kb-brand)" : "var(--kb-text-strong)"}">${escHtml(d.shortName)}</text>
+              <text x="${lx.toFixed(1)}" y="${(ly + 12).toFixed(1)}" text-anchor="${anchor}" font-size="10.5" fill="var(--kb-text-muted)">${d.executed}/${d.total} 测 · ${d.passed} 过</text>
+            </g>
+          `;
+        }).join("");
+
+        svg.innerHTML = `
+          ${rings}
+          ${axes}
+          <polygon points="${covPts}" fill="rgba(0, 124, 239, 0.16)" stroke="var(--kb-brand)" stroke-width="2" />
+          <polygon points="${passPts}" fill="rgba(21, 128, 61, 0.18)" stroke="var(--kb-ok)" stroke-width="2" />
+          ${nodes}
+        `;
+      }
+
+      function renderDomainMatrix(domainStats) {
+        const container = document.getElementById("domains-matrix");
+        container.innerHTML = domainStats.map((d) => {
+          const isDomActive = uiState.domainFilter === d.id;
+          return `
+            <div class="domain-card${isDomActive ? " highlighted" : ""}">
+              <div class="domain-head">
+                <button type="button" class="domain-name" data-domain-click="${escHtml(d.id)}">${escHtml(d.name)}</button>
+                <span class="domain-stat tabular">${d.executed}/${d.total} 已测 · ${d.passed} 通过</span>
+              </div>
+              <div class="tag-cloud">
+                ${d.tags.map((t) => {
+                  const dotCls = t.status === "passed" ? "ok" : (t.status === "failed" ? "fail" : (t.status === "blocked" ? "block" : "notrun"));
+                  const pressed = uiState.tagFilter === t.tag;
+                  return `<button type="button" class="tag-chip" data-tag-filter="${escHtml(t.tag)}" aria-pressed="${pressed}" title="${escHtml(t.label)}（${escHtml(t.caseId)}）"><span class="dot ${dotCls}"></span>#${escHtml(t.tag)}</button>`;
+                }).join("")}
+              </div>
+            </div>
+          `;
+        }).join("");
+
+        const clearBtn = document.getElementById("btn-clear-cap-filter");
+        const activeBadge = document.getElementById("active-tag-indicator");
+        const hasCapFilter = Boolean(uiState.tagFilter || uiState.domainFilter || uiState.statusFilter);
+        clearBtn.hidden = !hasCapFilter;
+        if (uiState.tagFilter) {
+          activeBadge.hidden = false;
+          activeBadge.textContent = `能力筛选：#${uiState.tagFilter}`;
+        } else if (uiState.domainFilter) {
+          const dom = SUITE_DOMAINS.find((d) => d.id === uiState.domainFilter);
+          activeBadge.hidden = false;
+          activeBadge.textContent = `能力域：${dom ? dom.name : uiState.domainFilter}`;
+        } else {
+          activeBadge.hidden = true;
+        }
+      }
+
+      function renderCaseAccordion(model) {
+        const allBtn = document.getElementById("scope-all-btn");
+        const execBtn = document.getElementById("scope-exec-btn");
+        allBtn.textContent = `全部用例 (${model.totalCases})`;
+        execBtn.textContent = `仅本次已执行 (${model.executed})`;
+        allBtn.setAttribute("aria-pressed", String(!uiState.scopeOnlyExecuted));
+        execBtn.setAttribute("aria-pressed", String(uiState.scopeOnlyExecuted));
+        execBtn.disabled = model.executed === 0;
+
+        const q = uiState.searchQuery.trim().toLowerCase();
+        const filtered = model.cases.filter((c) => {
+          if (uiState.scopeOnlyExecuted && c.status === "not_run") return false;
+          if (uiState.statusFilter && c.status !== uiState.statusFilter) return false;
+          if (uiState.domainFilter && c.domainId !== uiState.domainFilter) return false;
+          if (uiState.tagFilter && !c.tags.includes(uiState.tagFilter)) return false;
+          if (q) {
+            const hay = [
+              c.id, c.title, c.summary || "", c.goal,
+              c.tags.map((t) => "#" + t).join(" "),
+              (c.runIds || []).join(" "),
+              (c.threadIds || []).join(" ")
+            ].join(" ").toLowerCase();
+            if (!hay.includes(q)) return false;
+          }
+          return true;
+        });
+
+        filtered.sort((a, b) => {
+          const oa = STATUS_META[a.status].order;
+          const ob = STATUS_META[b.status].order;
+          if (oa !== ob) return oa - ob;
+          return a.id.localeCompare(b.id);
+        });
+
+        const acc = document.getElementById("case-accordion");
+        if (filtered.length === 0) {
+          acc.innerHTML = `<div class="panel-card" style="text-align:center;color:var(--kb-text-sec);">当前筛选条件下没有匹配的测试用例。</div>`;
+          syncToggleAllButton();
+          return;
+        }
+
+        const autoExpandAll = filtered.length === 1 && filtered[0].status !== "not_run";
+        acc.innerHTML = filtered.map((c) => {
+          const stMeta = STATUS_META[c.status];
+          const shouldOpen = autoExpandAll || c.status === "failed" || c.status === "blocked";
+          const mChips = [];
+          if (c.status !== "not_run") {
+            if (c.durationMs != null) mChips.push(`<span class="metric-chip">耗时 <strong>${escHtml(formatDuration(c.durationMs))}</strong></span>`);
+            if (c.metrics && c.metrics.points != null) mChips.push(`<span class="metric-chip">积分 <strong>${escHtml(c.metrics.points)}</strong></span>`);
+            if (c.metrics && c.metrics.cacheHitRate != null) mChips.push(`<span class="metric-chip">缓存命中 <strong>${escHtml(c.metrics.cacheHitRate)}%</strong></span>`);
+            if (c.cleanup) mChips.push(`<span class="metric-chip">清理 <strong>${escHtml(CLEANUP_LABEL[c.cleanup.status] || c.cleanup.status)}</strong></span>`);
+          }
+
+          return `
+            <details class="case-item" data-case-id="${escHtml(c.id)}" data-status="${escHtml(c.status)}"${shouldOpen ? " open" : ""}>
+              <summary>
+                <div class="case-summary-main">
+                  <span class="case-id">${escHtml(c.id)}</span>
+                  <span class="case-title">${escHtml(c.title)}</span>
+                </div>
+                <div class="case-summary-side">
+                  ${c.tags.slice(0, 3).map((t) => `<span class="pill mono">#${escHtml(t)}</span>`).join("")}
+                  ${c.tags.length > 3 ? `<span class="pill">+${c.tags.length - 3}</span>` : ""}
+                  <span class="pill ${stMeta.pillClass}">${escHtml(stMeta.label)}</span>
+                </div>
+              </summary>
+              <div class="case-body">
+                ${c.status === "not_run" ? renderNotRunBody(c) : renderExecutedBody(c, mChips)}
+              </div>
+            </details>
+          `;
+        }).join("");
+
+        syncToggleAllButton();
+      }
+
+      function renderNotRunBody(c) {
+        return `
+          <div class="note-box"><strong>测试目标：</strong>${escHtml(c.goal)}</div>
+          <div class="tag-cloud">
+            ${c.tags.map((t) => `<button type="button" class="tag-chip" data-tag-filter="${escHtml(t)}">#${escHtml(t)}</button>`).join("")}
+          </div>
+          <div class="cmd-box">
+            <span>${escHtml(c.cmdTemplate)}</span>
+            <button type="button" class="copy-mini" data-copy="${escHtml(c.cmdTemplate)}">复制命令</button>
+          </div>
+        `;
+      }
+
+      function renderExecutedBody(c, mChips) {
+        const tableId = `tbl-cap-${c.id}`;
+        const stepsHtml = c.steps.length ? `
+          <div tabindex="0" role="region" aria-labelledby="${tableId}" class="table-wrapper">
+            <table>
+              <caption id="${tableId}" class="sr-only-caption">${escHtml(c.id)} 分步核验明细</caption>
+              <thead>
+                <tr>
+                  <th>检查步</th>
+                  <th>状态</th>
+                  <th>正式预期</th>
+                  <th>实测观察</th>
+                  <th>证据</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${c.steps.map((s) => {
+                  const sm = STATUS_META[s.status] || STATUS_META.passed;
+                  return `
+                    <tr>
+                      <th>${escHtml(s.name)}</th>
+                      <td data-label="状态"><span class="pill ${sm.pillClass}">${escHtml(sm.label)}</span></td>
+                      <td data-label="正式预期">${escHtml(s.expected || "—")}</td>
+                      <td data-label="实测观察">${escHtml(s.actual || "—")}</td>
+                      <td data-label="证据" class="mono" style="font-size:12px;">${escHtml(s.evidence || "—")}</td>
+                    </tr>
+                  `;
+                }).join("")}
+              </tbody>
+            </table>
+          </div>
+        ` : "";
+
+        const summaryCls = c.status === "failed" ? "fail" : (c.status === "blocked" ? "block" : "");
+        const calibHtml = c.calibrations.length ? `
+          <div class="note-box calib">
+            <strong>实测校准记录：</strong>
+            <ul style="margin:4px 0 0;padding-left:18px;">
+              ${c.calibrations.map((x) => `<li>${escHtml(x)}</li>`).join("")}
+            </ul>
+          </div>
+        ` : "";
+
+        return `
+          <div class="case-meta-strip">
+            <div class="metric-chips">${mChips.join("")}</div>
+            <button type="button" class="btn" data-open-drawer="${escHtml(c.id)}">查看轨迹 / 证据抽屉</button>
+          </div>
+          <div class="note-box ${summaryCls}"><strong>执行结论：</strong>${escHtml(c.summary || c.goal)}</div>
+          ${stepsHtml}
+          ${calibHtml}
+        `;
+      }
+
+      function renderAuditTab(model) {
+        const executed = model.cases.filter((c) => c.status !== "not_run");
+        const tbody = document.getElementById("audit-trace-body");
+        if (executed.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--kb-text-sec);">当前暂无已执行用例记录。</td></tr>`;
+          document.getElementById("perf-bars").innerHTML = `<div style="color:var(--kb-text-muted);font-size:13px;">暂无耗时数据</div>`;
+          document.getElementById("cleanup-list").innerHTML = `<div style="color:var(--kb-text-muted);font-size:13px;">暂无清理核验记录</div>`;
+          return;
+        }
+
+        tbody.innerHTML = executed.map((c) => {
+          const sm = STATUS_META[c.status];
+          const extraMetric = c.metrics && c.metrics.cacheHitRate != null
+            ? `缓存命中 ${c.metrics.cacheHitRate}%`
+            : (c.metrics && c.metrics.extra ? c.metrics.extra : "—");
+          return `
+            <tr>
+              <th>${escHtml(c.id)}</th>
+              <td data-label="状态"><span class="pill ${sm.pillClass}">${escHtml(sm.label)}</span></td>
+              <td data-label="threadId" class="mono" style="font-size:12px;">${c.threadIds.length ? c.threadIds.map((id) => `<div>${escHtml(id)} <button type="button" class="copy-mini" data-copy="${escHtml(id)}">复制</button></div>`).join("") : "—"}</td>
+              <td data-label="runId 列表" class="mono" style="font-size:12px;">${c.runIds.length ? c.runIds.map((id) => `<div>${escHtml(id)} <button type="button" class="copy-mini" data-copy="${escHtml(id)}">复制</button></div>`).join("") : "—"}</td>
+              <td data-label="耗时" class="tabular">${escHtml(formatDuration(c.durationMs))}</td>
+              <td data-label="积分消耗" class="tabular">${c.metrics && c.metrics.points != null ? escHtml(c.metrics.points) : "—"}</td>
+              <td data-label="关键指标">${escHtml(extraMetric)}</td>
+            </tr>
+          `;
+        }).join("");
+
+        const maxDur = Math.max(1, ...executed.map((c) => Number(c.durationMs) || 0));
+        document.getElementById("perf-bars").innerHTML = executed.map((c) => {
+          const d = Number(c.durationMs) || 0;
+          const pct = Math.round((d / maxDur) * 100);
+          return `
+            <div class="bar-row">
+              <strong class="mono">${escHtml(c.id)}</strong>
+              <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+              <span class="tabular" style="text-align:right;">${escHtml(formatDuration(c.durationMs))}${c.metrics && c.metrics.points != null ? ` · ${c.metrics.points}分` : ""}</span>
+            </div>
+          `;
+        }).join("");
+
+        document.getElementById("cleanup-list").innerHTML = executed.map((c) => {
+          const cl = c.cleanup || { status: "unknown", note: "未记录" };
+          const pillCls = cl.status === "passed" || cl.status === "not_needed" ? "pill-ok" : (cl.status === "failed" ? "pill-fail" : "pill-block");
+          return `
+            <div class="note-box" style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+              <div>
+                <strong class="mono">${escHtml(c.id)}</strong>
+                <span style="margin-left:8px;color:var(--kb-text-sec);">${escHtml(cl.note || "—")}</span>
+              </div>
+              <span class="pill ${pillCls}">${escHtml(CLEANUP_LABEL[cl.status] || cl.status)}</span>
+            </div>
+          `;
+        }).join("");
+      }
+
+      function renderFactsTab(model) {
+        function fillList(id, arr, fallback) {
+          const el = document.getElementById(id);
+          const list = Array.isArray(arr) && arr.length ? arr : [fallback];
+          el.innerHTML = list.map((x) => `<li>${escHtml(x)}</li>`).join("");
+        }
+        fillList("facts-confirmed", model.notes.facts, "暂无额外补充事实记录。");
+        fillList("facts-inferences", model.notes.inferences, "暂无待验证推断。");
+        fillList("facts-gaps", model.notes.gaps, "当前无缺失证据记录（未执行项请见用例面板）。");
+        fillList("facts-calibrations", model.notes.calibrations, "暂无实测口径校准记录。");
+      }
+
+      /* =====================================================================
+         Native Drawer Dialog (light-dismiss + Safari fallback + inert parent)
+         ===================================================================== */
+      const drawer = document.getElementById("case-drawer");
+
+      function openCaseDrawer(caseId) {
+        const model = normalizeReport(currentData);
+        const c = model.cases.find((x) => x.id === caseId);
+        if (!c) return;
+        const sm = STATUS_META[c.status];
+        document.getElementById("drawer-badges").innerHTML = `
+          <span class="case-id">${escHtml(c.id)}</span>
+          <span class="pill ${sm.pillClass}">${escHtml(sm.label)}</span>
+          <span class="pill">${escHtml(c.priority)}</span>
+        `;
+        document.getElementById("drawer-title").textContent = c.title;
+
+        const bodyEl = document.getElementById("drawer-body");
+        bodyEl.innerHTML = `
+          <div class="note-box"><strong>测试目标：</strong>${escHtml(c.goal)}</div>
+          <div class="note-box"><strong>本次结论：</strong>${escHtml(c.summary || "未执行")}</div>
+          <div class="tele-item">
+            <div class="tele-label">能力标签</div>
+            <div class="tag-cloud" style="margin-top:4px;">${c.tags.map((t) => `<span class="pill mono">#${escHtml(t)}</span>`).join("")}</div>
+          </div>
+          <div class="tele-item">
+            <div class="tele-label">会话与运行 ID（Langfuse 精确过滤依据）</div>
+            <div class="mono" style="font-size:12px;display:grid;gap:6px;margin-top:6px;">
+              <div><strong>threadIds：</strong>${c.threadIds.length ? c.threadIds.map((id) => `${escHtml(id)} <button type="button" class="copy-mini" data-copy="${escHtml(id)}">复制</button>`).join(" · ") : "—"}</div>
+              <div><strong>runIds：</strong>${c.runIds.length ? c.runIds.map((id) => `${escHtml(id)} <button type="button" class="copy-mini" data-copy="${escHtml(id)}">复制</button>`).join("<br/>") : "—"}</div>
+            </div>
+          </div>
+          ${c.evidencePaths.length ? `
+            <div class="tele-item">
+              <div class="tele-label">关联产物与证据文件</div>
+              <ul class="fact-list mono" style="font-size:12px;margin-top:6px;">
+                ${c.evidencePaths.map((p) => `<li>${escHtml(p)}</li>`).join("")}
+              </ul>
+            </div>
+          ` : ""}
+          ${c.calibrations.length ? `
+            <div class="note-box calib">
+              <strong>实测口径校准：</strong>
+              <ul class="fact-list" style="margin-top:6px;">
+                ${c.calibrations.map((x) => `<li>${escHtml(x)}</li>`).join("")}
+              </ul>
+            </div>
+          ` : ""}
+        `;
+
+        drawer.showModal();
+      }
+
+      drawer.addEventListener("close", () => {
+        drawer.returnValue = "";
+      });
+
+      if (!("closedBy" in HTMLDialogElement.prototype)) {
+        const isOutside = (e, dlg) => {
+          const r = dlg.getBoundingClientRect();
+          return e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom;
+        };
+        let pressedOutside = false;
+        drawer.addEventListener("pointerdown", (e) => { pressedOutside = isOutside(e, drawer); });
+        drawer.addEventListener("pointerup", (e) => { if (pressedOutside && isOutside(e, drawer)) drawer.close(); });
+      }
+
+      /* =====================================================================
+         Tabs (focusgroup + aria-selected + hidden="until-found" + beforematch)
+         ===================================================================== */
+      const tablist = document.getElementById("main-tablist");
+      const tabs = Array.from(tablist.querySelectorAll('[role="tab"]'));
+      const panels = Array.from(document.querySelectorAll('[role="tabpanel"]'));
+
+      function selectTab(targetTab, shouldFocus) {
+        const idx = tabs.indexOf(targetTab);
+        if (idx < 0) return;
+        tabs.forEach((tab, i) => {
+          const selected = i === idx;
+          tab.setAttribute("aria-selected", String(selected));
+          tab.toggleAttribute("focusgroupstart", selected);
+          if (!selected && !Object.hasOwn(HTMLElement.prototype, "focusGroup")) {
+            tab.tabIndex = -1;
+          } else {
+            tab.removeAttribute("tabindex");
+          }
+        });
+        panels.forEach((panel, i) => {
+          if (i === idx) {
+            panel.removeAttribute("hidden");
+            panel.setAttribute("tabindex", "0");
+          } else {
+            panel.setAttribute("hidden", "until-found");
+            panel.removeAttribute("tabindex");
+          }
+        });
+        if (shouldFocus) targetTab.focus();
+      }
+
+      tabs.forEach((tab) => {
+        tab.addEventListener("click", () => selectTab(tab, false));
+        tab.addEventListener("focus", () => selectTab(tab, false));
+      });
+
+      if (!Object.hasOwn(HTMLElement.prototype, "focusGroup")) {
+        tablist.addEventListener("keydown", (e) => {
+          const idx = tabs.indexOf(document.activeElement);
+          if (idx < 0) return;
+          let next = idx;
+          if (e.key === "ArrowRight") next = (idx + 1) % tabs.length;
+          else if (e.key === "ArrowLeft") next = (idx - 1 + tabs.length) % tabs.length;
+          else if (e.key === "Home") next = 0;
+          else if (e.key === "End") next = tabs.length - 1;
+          else return;
+          e.preventDefault();
+          selectTab(tabs[next], true);
+        });
+      }
+
+      document.addEventListener("beforematch", (e) => {
+        const panel = e.target.closest('[role="tabpanel"]');
+        if (!panel) return;
+        const idx = panels.indexOf(panel);
+        if (idx >= 0) selectTab(tabs[idx], false);
+      });
+
+      if (!("onbeforematch" in HTMLElement.prototype)) {
+        // Fallback: non-Chromium browsers that lack hidden="until-found" still switch via click/keyboard cleanly
+        panels.forEach((p, idx) => {
+          if (idx !== 0) p.hidden = true;
+        });
+      }
+
+      /* =====================================================================
+         Accordion Expand/Collapse All (Invoker Commands + Fallback)
+         ===================================================================== */
+      function syncToggleAllButton() {
+        const acc = document.getElementById("case-accordion");
+        const btn = document.getElementById("btn-toggle-all");
+        const items = acc.querySelectorAll(":scope > details");
+        const allOpen = items.length > 0 && Array.prototype.every.call(items, (d) => d.open);
+        btn.setAttribute("aria-expanded", String(allOpen));
+      }
+
+      function toggleAllCases() {
+        const acc = document.getElementById("case-accordion");
+        const btn = document.getElementById("btn-toggle-all");
+        const expand = btn.getAttribute("aria-expanded") !== "true";
+        for (const d of acc.querySelectorAll(":scope > details")) d.open = expand;
+        syncToggleAllButton();
+      }
+
+      document.addEventListener("command", (e) => {
+        if (e.command === "--toggle-all") toggleAllCases();
+      }, { capture: true });
+
+      if (!Object.hasOwn(HTMLButtonElement.prototype, "commandForElement")) {
+        document.getElementById("btn-toggle-all").addEventListener("click", toggleAllCases);
+      }
+
+      document.addEventListener("toggle", (e) => {
+        if (e.target.matches("#case-accordion > details")) syncToggleAllButton();
+      }, { capture: true });
+
+      /* =====================================================================
+         Two-state Dark Mode Toggle
+         ===================================================================== */
+      const THEME_STORAGE_KEY = "kb-report-color-scheme";
+      const metaColorScheme = document.querySelector('meta[name="color-scheme"]');
+
+      function getSystemScheme() {
+        return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      }
+
+      function getRenderedScheme() {
+        if (metaColorScheme.content === "light" || metaColorScheme.content === "dark") {
+          return metaColorScheme.content;
+        }
+        return getSystemScheme();
+      }
+
+      document.getElementById("btn-theme-toggle").addEventListener("click", () => {
+        const target = getRenderedScheme() === "dark" ? "light" : "dark";
+        const sys = getSystemScheme();
+        try {
+          if (target !== sys) {
+            localStorage.setItem(THEME_STORAGE_KEY, target);
+            metaColorScheme.content = target;
+          } else {
+            localStorage.removeItem(THEME_STORAGE_KEY);
+            metaColorScheme.content = "light dark";
+          }
+        } catch (_) {
+          metaColorScheme.content = target !== sys ? target : "light dark";
+        }
+      });
+
+      window.addEventListener("storage", (e) => {
+        if (e.key !== THEME_STORAGE_KEY) return;
+        metaColorScheme.content = (e.newValue === "light" || e.newValue === "dark") ? e.newValue : "light dark";
+      });
+
+      /* =====================================================================
+         Event Delegation & Demo Switcher & JSON Loader
+         ===================================================================== */
+      document.addEventListener("click", (e) => {
+        const copyBtn = e.target.closest("[data-copy]");
+        if (copyBtn) {
+          copyText(copyBtn.dataset.copy);
+          return;
+        }
+        const drawerBtn = e.target.closest("[data-open-drawer]");
+        if (drawerBtn) {
+          openCaseDrawer(drawerBtn.dataset.openDrawer);
+          return;
+        }
+        const stBtn = e.target.closest("[data-status-filter]");
+        if (stBtn) {
+          const val = stBtn.dataset.statusFilter;
+          uiState.statusFilter = uiState.statusFilter === val ? null : val;
+          if (uiState.statusFilter === "not_run") uiState.scopeOnlyExecuted = false;
+          renderHeroAndTelemetry(normalizeReport(currentData));
+          renderDomainMatrix(normalizeReport(currentData).domainStats);
+          renderCaseAccordion(normalizeReport(currentData));
+          return;
+        }
+        const tagBtn = e.target.closest("[data-tag-filter]");
+        if (tagBtn) {
+          const tag = tagBtn.dataset.tagFilter;
+          uiState.tagFilter = uiState.tagFilter === tag ? null : tag;
+          uiState.domainFilter = null;
+          if (uiState.tagFilter) uiState.scopeOnlyExecuted = false;
+          const m = normalizeReport(currentData);
+          renderRadar(m.domainStats);
+          renderDomainMatrix(m.domainStats);
+          renderCaseAccordion(m);
+          return;
+        }
+        const domBtn = e.target.closest("[data-domain-click]");
+        if (domBtn) {
+          const dom = domBtn.dataset.domainClick;
+          uiState.domainFilter = uiState.domainFilter === dom ? null : dom;
+          uiState.tagFilter = null;
+          if (uiState.domainFilter) uiState.scopeOnlyExecuted = false;
+          const m = normalizeReport(currentData);
+          renderRadar(m.domainStats);
+          renderDomainMatrix(m.domainStats);
+          renderCaseAccordion(m);
+          return;
+        }
+        const demoBtn = e.target.closest("[data-demo]");
+        if (demoBtn) {
+          renderAll(buildDemoData(demoBtn.dataset.demo), { resetScope: true });
+          showToast("已切换演示视图");
+        }
+      });
+
+      document.getElementById("btn-clear-cap-filter").addEventListener("click", () => {
+        uiState.tagFilter = null;
+        uiState.domainFilter = null;
+        uiState.statusFilter = null;
+        const m = normalizeReport(currentData);
+        renderHeroAndTelemetry(m);
+        renderRadar(m.domainStats);
+        renderDomainMatrix(m.domainStats);
+        renderCaseAccordion(m);
+      });
+
+      document.getElementById("scope-all-btn").addEventListener("click", () => {
+        uiState.scopeOnlyExecuted = false;
+        renderCaseAccordion(normalizeReport(currentData));
+      });
+      document.getElementById("scope-exec-btn").addEventListener("click", () => {
+        uiState.scopeOnlyExecuted = true;
+        if (uiState.statusFilter === "not_run") uiState.statusFilter = null;
+        const m = normalizeReport(currentData);
+        renderHeroAndTelemetry(m);
+        renderCaseAccordion(m);
+      });
+      document.getElementById("case-search").addEventListener("input", (e) => {
+        uiState.searchQuery = e.target.value;
+        renderCaseAccordion(normalizeReport(currentData));
+      });
+
+      document.getElementById("btn-print").addEventListener("click", () => window.print());
+      document.getElementById("btn-export-json").addEventListener("click", () => {
+        const blob = new Blob([JSON.stringify(currentData, null, 2)], { type: "application/json;charset=utf-8" });
+        downloadBlob(blob, `kb-suite-001-${(currentData.meta && currentData.meta.runId) || "data"}.json`);
+      });
+
+      document.getElementById("btn-export-filled-html").addEventListener("click", () => {
+        const clone = document.documentElement.cloneNode(true);
+        const slot = clone.querySelector("#kb-report-data");
+        slot.textContent = JSON.stringify(currentData, null, 2).replace(/<\//g, "<\\/");
+        const html = "<!DOCTYPE html>\n" + clone.outerHTML;
+        downloadBlob(new Blob([html], { type: "text/html;charset=utf-8" }), `kb-suite-001-${(currentData.meta && currentData.meta.runId) || "report"}.html`);
+      });
+
+      document.getElementById("btn-restore-embedded").addEventListener("click", () => {
+        const raw = safeParseJson(EMBEDDED_JSON_TEXT);
+        if (raw) {
+          renderAll(raw, { resetScope: true });
+          showToast("已还原初始内嵌数据");
+        }
+      });
+
+      function downloadBlob(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
+
+      /* File drag & drop + file input */
+      const dz = document.getElementById("json-dropzone");
+      const fileInput = document.getElementById("json-file-input");
+
+      function loadJsonFile(file) {
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          const parsed = safeParseJson(String(reader.result || ""));
+          if (!parsed || parsed.schemaVersion !== "kb-suite-001-report.v1" || !Array.isArray(parsed.cases)) {
+            showToast("JSON 格式不符合 kb-suite-001-report.v1 规范");
+            return;
+          }
+          renderAll(parsed, { resetScope: true });
+          selectTab(tabs[0], false);
+          showToast(`已加载 ${parsed.cases.length} 个用例数据`);
+        };
+        reader.readAsText(file, "utf-8");
+      }
+
+      fileInput.addEventListener("change", (e) => loadJsonFile(e.target.files[0]));
+      dz.addEventListener("dragover", (e) => { e.preventDefault(); dz.classList.add("dragover"); });
+      dz.addEventListener("dragleave", () => dz.classList.remove("dragover"));
+      dz.addEventListener("drop", (e) => {
+        e.preventDefault();
+        dz.classList.remove("dragover");
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) loadJsonFile(e.dataTransfer.files[0]);
+      });
+
+      function buildDemoData(mode) {
+        if (mode === "single") {
+          return {
+            schemaVersion: "kb-suite-001-report.v1",
+            isPlaceholderDemo: true,
+            meta: {
+              suiteId: "KB-SUITE-001",
+              taskId: "无（单用例预览）",
+              runId: "DEMO-SINGLE-CASE09",
+              env: "preprod",
+              langfuseEnv: "prd",
+              startedAt: "2026-11-26 09:08:10 +08:00",
+              durationMs: 56000,
+              gitCommit: "7fb5d4bd",
+              worktreeDirty: false,
+              modelSummary: "deepseek-v4-1-flash",
+              pointsConsumed: 7.33,
+              cleanupStatus: "passed",
+              cleanupNote: "测试 Skill 已启用并物理删除"
+            },
+            cases: [
+              {
+                id: "CASE-09",
+                status: "passed",
+                summary: "单用例专项演示：个人 Skill 负向 4102/4104、隔离报错、跨会话 _import 加载、覆盖 V2 与启停删除均通过。",
+                durationMs: 56000,
+                threadIds: ["thread_demo_a", "thread_demo_b"],
+                runIds: ["run_demo_09_1", "run_demo_09_2", "run_demo_09_3"],
+                metrics: { points: 7.33 },
+                cleanup: { status: "passed", note: "个人 Skill 存量基线完整无损" },
+                steps: [
+                  { name: "Step 0：负向 4102/4104", status: "passed", expected: "4102 与 4104 拦截", actual: "精准命中", evidence: "API JSON" },
+                  { name: "Step 1–4：全生命周期与自清理", status: "passed", expected: "创建/加载/覆盖/启停删除通过", actual: "全部通过", evidence: "Langfuse + Web API" }
+                ]
+              }
+            ],
+            notes: {
+              facts: ["单用例专项模式下自动置顶并默认展开当前唯一执行用例，本次执行通过率按 1/1 = 100% 计算。"],
+              inferences: [],
+              gaps: ["其余 9 项用例本次未执行。"],
+              calibrations: []
+            }
+          };
+        }
+        if (mode === "full") {
+          return {
+            schemaVersion: "kb-suite-001-report.v1",
+            isPlaceholderDemo: true,
+            meta: {
+              suiteId: "KB-SUITE-001",
+              taskId: "无（全量回归演示）",
+              runId: "DEMO-FULL-10-CASES",
+              env: "preprod",
+              langfuseEnv: "prd",
+              startedAt: "2026-11-26 08:30:00 +08:00",
+              durationMs: 480000,
+              gitCommit: "7fb5d4bd",
+              worktreeDirty: false,
+              modelSummary: "deepseek-v4-1-flash",
+              pointsConsumed: 158.2,
+              cleanupStatus: "passed",
+              cleanupNote: "全量 10 个用例无残留"
+            },
+            cases: SUITE_CASES.map((c, idx) => ({
+              id: c.id,
+              status: "passed",
+              summary: `全量演示：${c.title}全部检查点通过。`,
+              durationMs: 25000 + idx * 7000,
+              threadIds: [`thread_demo_${c.id.toLowerCase()}`],
+              runIds: [`run_demo_${c.id.toLowerCase()}`],
+              metrics: { points: Number((2.5 + idx * 1.4).toFixed(2)) },
+              cleanup: { status: "passed", note: "演示清理完成" }
+            })),
+            notes: {
+              facts: ["全量 10/10 用例（23/23 能力标签）全部覆盖通过。"],
+              inferences: [],
+              gaps: [],
+              calibrations: []
+            }
+          };
+        }
+        // Mixed 4-state sample
+        return {
+          schemaVersion: "kb-suite-001-report.v1",
+          isPlaceholderDemo: true,
+          meta: {
+            suiteId: "KB-SUITE-001",
+            taskId: "无（局部四态演示）",
+            runId: "DEMO-MIXED-4-OF-10",
+            env: "test",
+            langfuseEnv: "test",
+            startedAt: "2026-11-26 09:05:00 +08:00",
+            durationMs: 184000,
+            gitCommit: "7fb5d4bd",
+            worktreeDirty: true,
+            modelSummary: "deepseek-v4-1-flash",
+            pointsConsumed: 131.2,
+            cleanupStatus: "passed",
+            cleanupNote: "除阻塞/失败项外均完成自清理"
+          },
+          cases: [
+            {
+              id: "CASE-05",
+              status: "failed",
+              summary: "示例失败：Step 4 停用后会话 B 仍出现 1 次越权工具调用（演示失败高亮置顶）。",
+              durationMs: 41000,
+              threadIds: ["thread_demo_05"],
+              runIds: ["run_demo_05_fail"],
+              metrics: { points: 3.1 },
+              cleanup: { status: "passed", note: "finally 已删除临时 MCP" },
+              steps: [
+                { name: "Step 0–3：准入与授权调用", status: "passed", expected: "8004 + SELECTED", actual: "通过", evidence: "API + Langfuse" },
+                { name: "Step 4：停用即时隔离", status: "failed", expected: "工具调用为 0 次", actual: "实测命中 1 次（演示失败）", evidence: "Langfuse tool span" }
+              ]
+            },
+            {
+              id: "CASE-06",
+              status: "blocked",
+              summary: "示例阻塞：测试环境 XXL-JOB 执行器离线，等待 Cron 触发超时（标记为阻塞而非失败）。",
+              durationMs: 65000,
+              threadIds: ["thread_demo_06"],
+              runIds: ["run_demo_06_blk"],
+              metrics: { points: 2.65 },
+              cleanup: { status: "passed", note: "finally 已删除定时任务" }
+            },
+            {
+              id: "CASE-09",
+              status: "passed",
+              summary: "个人 Skill 负向 4102/4104、隔离报错、跨会话 _import 加载、覆盖 V2 与启停删除均通过。",
+              durationMs: 56000,
+              threadIds: ["thread_demo_09a", "thread_demo_09b"],
+              runIds: ["run_demo_09_1", "run_demo_09_2", "run_demo_09_3"],
+              metrics: { points: 7.33 },
+              cleanup: { status: "passed", note: "已删测试 Skill 且存量完好" }
+            },
+            {
+              id: "CASE-10",
+              status: "passed",
+              summary: "文生图、链式图生图与 list_attachments 均通过，免调 save_image_to_library 且删后 COS 404。",
+              durationMs: 77000,
+              threadIds: ["thread_demo_10"],
+              runIds: ["run_demo_10_1", "run_demo_10_2"],
+              metrics: { points: 125.45 },
+              cleanup: { status: "passed", note: "文件库为空，原链接返回 404" }
+            }
+          ],
+          notes: {
+            facts: ["局部执行 4/10 用例（通过 2、失败 1、阻塞 1），其余 6 项未执行。"],
+            inferences: ["仅在异常排查演示中出现停用隔离失败与调度器离线。"],
+            gaps: ["CASE-01/02/03/04/07/08 本轮未执行。"],
+            calibrations: ["通过率按 2/4 = 50% 计算，雷达图同步区分已测域与未测域。"]
+          }
+        };
+      }
+
+      /* Initial boot */
+      renderAll(currentData, { resetScope: true });
+    })();
+  </script>
+</body>
+</html>

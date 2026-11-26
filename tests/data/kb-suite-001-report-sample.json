@@ -1,0 +1,165 @@
+{
+  "schemaVersion": "kb-suite-001-report.v1",
+  "isPlaceholderDemo": true,
+  "meta": {
+    "suiteId": "KB-SUITE-001",
+    "taskId": "无（结构样例数据）",
+    "runId": "SAMPLE-20261126T000000Z-synthetic",
+    "env": "preprod",
+    "langfuseEnv": "prd",
+    "startedAt": "2026-11-26 09:00:00 +08:00",
+    "finishedAt": "2026-11-26 09:04:12 +08:00",
+    "durationMs": 252000,
+    "gitCommit": "7fb5d4bd285dc6e82bf49c7dfdd785f7bbc96374",
+    "worktreeDirty": false,
+    "modelSummary": "synthetic-sample-model",
+    "pointsBefore": 1000.0,
+    "pointsAfter": 865.5,
+    "pointsConsumed": 134.5,
+    "cleanupStatus": "passed",
+    "cleanupNote": "人工构造的非敏感多态样例数据，仅用于验证模板渲染"
+  },
+  "cases": [
+    {
+      "id": "CASE-01",
+      "status": "passed",
+      "summary": "合成样例：5 轮串行对话均正常命中 Prompt Cache（跨轮命中率 96.8%），无多余工具调用。",
+      "startedAt": "2026-11-26 09:00:05 +08:00",
+      "durationMs": 42000,
+      "threadIds": ["thread_sample_case01"],
+      "runIds": ["run_sample_case01_t1", "run_sample_case01_t2", "run_sample_case01_t3"],
+      "metrics": {
+        "cacheHitRate": 96.8,
+        "points": 2.4
+      },
+      "cleanup": {
+        "status": "not_needed",
+        "note": "只读业务查询，无持久化副作用"
+      },
+      "steps": [
+        {
+          "name": "第 1 轮：Skill 加载冷启动",
+          "status": "passed",
+          "expected": "触发 #skill-load 并写入前缀缓存",
+          "actual": "第 1 轮后半程命中率升至 93.4%",
+          "evidence": "sample events.json"
+        },
+        {
+          "name": "第 3/5 轮：工具结果入历史后纯文本总结",
+          "status": "passed",
+          "expected": "首步缓存命中率 >= 95% 且不重复调用工具",
+          "actual": "第 3 轮命中 96.8%，未重复触发工具",
+          "evidence": "sample langfuse usage"
+        }
+      ],
+      "evidencePaths": ["tests/data/kb-suite-001-report-sample.json"]
+    },
+    {
+      "id": "CASE-05",
+      "status": "failed",
+      "summary": "合成样例失败：演示连接器停用后仍出现越权调用时，面板如何高亮失败项与步骤证据。",
+      "startedAt": "2026-11-26 09:00:50 +08:00",
+      "durationMs": 48000,
+      "threadIds": ["thread_sample_case05a", "thread_sample_case05b"],
+      "runIds": ["run_sample_case05_1", "run_sample_case05_2"],
+      "metrics": {
+        "points": 3.85
+      },
+      "cleanup": {
+        "status": "passed",
+        "note": "finally 中按最新 revision 物理删除临时连接器"
+      },
+      "steps": [
+        {
+          "name": "Step 0–3：SSRF 拦截与最小授权调用",
+          "status": "passed",
+          "expected": "环回/凭据 URL 均返回 8004，已选工具调用成功",
+          "actual": "8004 精准拦截且 add/echo/fail 均按预期执行",
+          "evidence": "sample api + langfuse"
+        },
+        {
+          "name": "Step 4：停用后新会话运行时隔离",
+          "status": "failed",
+          "expected": "停用后个人 MCP 工具调用次数为 0",
+          "actual": "合成失败样例：观测到 1 次越权调用",
+          "evidence": "sample tool span"
+        }
+      ],
+      "calibrations": [
+        "本条目为验证失败渲染逻辑的合成示例，并非真实环境缺陷。"
+      ]
+    },
+    {
+      "id": "CASE-06",
+      "status": "blocked",
+      "summary": "合成样例阻塞：模拟外部调度器队列维护导致 Cron 到点等待超时，按规范计为阻塞而非失败。",
+      "startedAt": "2026-11-26 09:01:40 +08:00",
+      "durationMs": 72000,
+      "threadIds": ["thread_sample_case06"],
+      "runIds": ["run_sample_case06_1"],
+      "metrics": {
+        "points": 2.8
+      },
+      "cleanup": {
+        "status": "passed",
+        "note": "finally 已调用 /schedule/delete 清理临时定时任务"
+      },
+      "steps": [
+        {
+          "name": "第 1–3 轮：7 项管理操作串联",
+          "status": "passed",
+          "expected": "创建/改名/暂停/恢复/改频全部成功",
+          "actual": "7 个定时任务管理操作均在 Langfuse 命中",
+          "evidence": "sample langfuse"
+        },
+        {
+          "name": "Step 4：XXL-JOB 真实 Cron 到点等待",
+          "status": "blocked",
+          "expected": "目标分钟准时触发 sched_* 会话",
+          "actual": "模拟环境未部署独立执行器，等待超时标记阻塞",
+          "evidence": "sample scheduler poll"
+        }
+      ]
+    },
+    {
+      "id": "CASE-09",
+      "status": "passed",
+      "summary": "合成样例：个人 Skill 4102/4104 拦截、内置隔离、跨会话 _import 加载、覆盖 V2 与启停删除均通过。",
+      "startedAt": "2026-11-26 09:02:55 +08:00",
+      "durationMs": 90000,
+      "threadIds": ["thread_sample_case09a", "thread_sample_case09b"],
+      "runIds": ["run_sample_case09_1", "run_sample_case09_2", "run_sample_case09_3"],
+      "metrics": {
+        "points": 125.45,
+        "extra": "zipBase64 校验通过"
+      },
+      "cleanup": {
+        "status": "passed",
+        "note": "先启用再删除，存量个人 Skill 无损"
+      },
+      "steps": [
+        {
+          "name": "Step 0–4：个人 Skill 全生命周期闭环",
+          "status": "passed",
+          "expected": "包校验、隔离、加载、覆盖、启停与清理全通",
+          "actual": "全部 4 阶段双口径校验通过",
+          "evidence": "sample api + zip + langfuse"
+        }
+      ]
+    }
+  ],
+  "notes": {
+    "facts": [
+      "本文件为人工构造的非敏感四态混合样例，涵盖 4 个已执行用例（通过 2、失败 1、阻塞 1）及 6 个自动补齐的未执行用例。"
+    ],
+    "inferences": [
+      "局部执行模式下，「本次执行通过率」为 2/4 = 50%，「全集能力覆盖进度」仅统计已执行标签，不受未执行用例混淆。"
+    ],
+    "gaps": [
+      "CASE-02 / CASE-03 / CASE-04 / CASE-07 / CASE-08 / CASE-10 在本样例中处于未执行状态。"
+    ],
+    "calibrations": [
+      "执行真实 Run 后可把本文件结构作为标准 schema 参考生成报告。"
+    ]
+  }
+}
