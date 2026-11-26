@@ -148,6 +148,42 @@
       ]
     }
   ],
+  "envConfig": {
+    "source": "合成样例配置（脱敏）",
+    "primaryModel": "synthetic-primary-model",
+    "fallbackModel": "synthetic-fallback-model",
+    "imageGenModel": "synthetic-image-pool",
+    "visionFollowupModel": "synthetic-vision-followup",
+    "compactionThreshold": "240,000 tokens · trigger-messages=0",
+    "toolLimits": "read_file ≤ 64,000 字符 · 沙箱隔离"
+  },
+  "aiSummary": {
+    "source": "合成四态样例",
+    "headline": "局部 4/10 用例：通过 2、失败 1（CASE-05）、阻塞 1（CASE-06），通过率 50%。",
+    "sections": [
+      {
+        "title": "核心结论",
+        "items": [
+          "【失败】CASE-05：MCP 停用后仍触发 1 次越权调用，隔离未即时生效。",
+          "【阻塞】CASE-06：调度执行器离线等待超时，计为阻塞不计失败。",
+          "【通过】CASE-01（缓存命中 96.8%）与 CASE-09（个人Skill）正常通过。"
+        ]
+      },
+      {
+        "title": "效能与资源",
+        "items": [
+          "总耗时 4m 12s，净消耗 134.5 积分；临时连接器、任务与 Skill 已清理。"
+        ]
+      },
+      {
+        "title": "覆盖缺口",
+        "items": [
+          "尚有 6 项用例本次未执行（CASE-02/03/04/07/08/10）。"
+        ]
+      }
+    ],
+    "recommendation": "建议优先修复 CASE-05 停用隔离问题，待环境就绪后连同 CASE-06 复测。"
+  },
   "notes": {
     "facts": [
       "本文件为人工构造的非敏感四态混合样例，涵盖 4 个已执行用例（通过 2、失败 1、阻塞 1）及 6 个自动补齐的未执行用例。"

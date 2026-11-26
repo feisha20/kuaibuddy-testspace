@@ -82,7 +82,63 @@ def validate_payload(data: object, source_label: str = "input") -> dict:
                 if sst is not None and sst not in VALID_STATUSES:
                     raise ValidationError(f"[{source_label}] {cid}.steps[{s_idx}].status 无效: {sst!r}")
 
+    ai_summary = data.get("aiSummary")
+    if ai_summary is not None:
+        if not isinstance(ai_summary, dict):
+            raise ValidationError(f"[{source_label}] aiSummary 必须是对象")
+        for s_field in ("source", "headline", "recommendation"):
+            val = ai_summary.get(s_field)
+            if val is not None and not isinstance(val, str):
+                raise ValidationError(f"[{source_label}] aiSummary.{s_field} 必须是字符串")
+        highlights = ai_summary.get("highlights")
+        if highlights is not None:
+            if not isinstance(highlights, list) or not all(isinstance(item, str) for item in highlights):
+                raise ValidationError(f"[{source_label}] aiSummary.highlights 必须是字符串数组")
+        sections = ai_summary.get("sections")
+        if sections is not None:
+            if not isinstance(sections, list):
+                raise ValidationError(f"[{source_label}] aiSummary.sections 必须是数组")
+            for sec_idx, sec in enumerate(sections):
+                if not isinstance(sec, dict):
+                    raise ValidationError(f"[{source_label}] aiSummary.sections[{sec_idx}] 必须是对象")
+                if not isinstance(sec.get("title"), str) or not sec["title"].strip():
+                    raise ValidationError(f"[{source_label}] aiSummary.sections[{sec_idx}].title 必须是非空字符串")
+                sec_items = sec.get("items")
+                if not isinstance(sec_items, list) or not all(isinstance(it, str) for it in sec_items):
+                    raise ValidationError(f"[{source_label}] aiSummary.sections[{sec_idx}].items 必须是字符串数组")
+
+    env_cfg = data.get("envConfig")
+    if env_cfg is not None:
+        if not isinstance(env_cfg, dict):
+            raise ValidationError(f"[{source_label}] envConfig 必须是对象")
+        for c_field in (
+            "source",
+            "primaryModel",
+            "fallbackModel",
+            "imageGenModel",
+            "visionFollowupModel",
+            "compactionThreshold",
+            "toolLimits",
+        ):
+            c_val = env_cfg.get(c_field)
+            if c_val is not None and not isinstance(c_val, str):
+                raise ValidationError(f"[{source_label}] envConfig.{c_field} 必须是字符串")
+        extra_items = env_cfg.get("extraItems")
+        if extra_items is not None:
+            if not isinstance(extra_items, list):
+                raise ValidationError(f"[{source_label}] envConfig.extraItems 必须是数组")
+            for ex_idx, ex in enumerate(extra_items):
+                if not isinstance(ex, dict):
+                    raise ValidationError(f"[{source_label}] envConfig.extraItems[{ex_idx}] 必须是对象")
+                if not isinstance(ex.get("label"), str) or not ex["label"].strip():
+                    raise ValidationError(f"[{source_label}] envConfig.extraItems[{ex_idx}].label 必须是非空字符串")
+                if not isinstance(ex.get("value"), str):
+                    raise ValidationError(f"[{source_label}] envConfig.extraItems[{ex_idx}].value 必须是字符串")
+
     return data
+
+
+CLEANUP_SEVERITY = {"failed": 4, "partial": 3, "unknown": 2, "passed": 1, "not_needed": 0}
 
 
 def merge_payloads(payloads: list[dict]) -> dict:
@@ -102,6 +158,13 @@ def merge_payloads(payloads: list[dict]) -> dict:
     }
     total_points = 0.0
     has_points = False
+    total_duration = 0
+    has_duration = False
+    models_seen: list[str] = []
+    cleanup_notes_seen: list[str] = []
+    worst_cleanup: str | None = None
+    merged_env_cfg: dict = {}
+    extra_items_by_label: dict[str, dict] = {}
 
     for p in payloads:
         m = p.get("meta") or {}
@@ -111,6 +174,29 @@ def merge_payloads(payloads: list[dict]) -> dict:
         if isinstance(m.get("pointsConsumed"), (int, float)):
             total_points += float(m["pointsConsumed"])
             has_points = True
+        if isinstance(m.get("durationMs"), (int, float)):
+            total_duration += int(m["durationMs"])
+            has_duration = True
+        ms = str(m.get("modelSummary") or "").strip()
+        if ms and ms not in models_seen:
+            models_seen.append(ms)
+        cs = str(m.get("cleanupStatus") or "").strip()
+        if cs and (worst_cleanup is None or CLEANUP_SEVERITY.get(cs, 2) > CLEANUP_SEVERITY.get(worst_cleanup, 2)):
+            worst_cleanup = cs
+        cn = str(m.get("cleanupNote") or "").strip()
+        if cn and cn not in cleanup_notes_seen:
+            cleanup_notes_seen.append(cn)
+
+        cfg = p.get("envConfig")
+        if isinstance(cfg, dict):
+            for ck, cv in cfg.items():
+                if ck == "extraItems" and isinstance(cv, list):
+                    for ex in cv:
+                        if isinstance(ex, dict) and ex.get("label"):
+                            extra_items_by_label[ex["label"]] = ex
+                elif cv not in (None, ""):
+                    merged_env_cfg[ck] = cv
+
         for c in p.get("cases") or []:
             cases_by_id[c["id"]] = c
         notes = p.get("notes") or {}
@@ -124,15 +210,32 @@ def merge_payloads(payloads: list[dict]) -> dict:
     )
     if has_points:
         merged_meta["pointsConsumed"] = round(total_points, 4)
+    merged_meta.pop("pointsBefore", None)
+    merged_meta.pop("pointsAfter", None)
+    if has_duration:
+        merged_meta["durationMs"] = total_duration
+    if models_seen:
+        merged_meta["modelSummary"] = " / ".join(models_seen)
+    if worst_cleanup:
+        merged_meta["cleanupStatus"] = worst_cleanup
+    if cleanup_notes_seen:
+        merged_meta["cleanupNote"] = "；".join(cleanup_notes_seen)
+
+    if extra_items_by_label:
+        merged_env_cfg["extraItems"] = list(extra_items_by_label.values())
 
     ordered_cases = [cases_by_id[cid] for cid in sorted(cases_by_id)]
-    return {
+    # 多份 Run 合并后不沿用单份 aiSummary，交由前端根据合并全集自动重新归纳
+    out = {
         "schemaVersion": SCHEMA_VERSION,
         "isPlaceholderDemo": all(bool(p.get("isPlaceholderDemo")) for p in payloads),
         "meta": merged_meta,
         "cases": ordered_cases,
         "notes": notes_merged,
     }
+    if merged_env_cfg:
+        out["envConfig"] = merged_env_cfg
+    return out
 
 
 def render_html(template_text: str, data: dict) -> str:

@@ -404,14 +404,17 @@
       color: var(--kb-text-strong);
     }
 
-    /* Hero summary + dual ring + telemetry */
+    /* Hero summary + dual ring + env config + AI summary */
     .hero-grid {
       display: grid;
-      grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+      grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.15fr);
       gap: 16px;
+      align-items: stretch;
     }
     @media (max-width: 1024px) {
       .hero-grid { grid-template-columns: minmax(0, 1fr); }
+      .hero-ai-slot { position: static; }
+      .hero-ai-card { position: static; max-height: 520px; }
     }
     .panel-card {
       background: var(--kb-surface);
@@ -420,6 +423,10 @@
       padding: 20px 22px;
       box-shadow: var(--kb-shadow-sm);
       min-width: 0;
+    }
+    .hero-verdict-card {
+      display: flex;
+      flex-direction: column;
     }
     .verdict-header {
       display: flex;
@@ -544,7 +551,211 @@
     .dot.block { background: var(--kb-block); }
     .dot.notrun { background: var(--kb-notrun); }
 
-    /* Telemetry grid */
+    /* Environment key configuration inside Left Hero Verdict card */
+    .env-config-box {
+      margin-top: 16px;
+      flex: 0 0 auto;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      gap: 10px;
+      padding: 13px 15px;
+      border-radius: var(--kb-radius-md);
+      border: 1px solid var(--kb-border);
+      background: var(--kb-surface-muted);
+    }
+    .env-config-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .env-config-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--kb-text-strong);
+      letter-spacing: 0.01em;
+    }
+    .env-config-source {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--kb-text-muted);
+      padding: 1px 7px;
+      border-radius: 999px;
+      border: 1px solid var(--kb-border);
+      background: var(--kb-surface);
+    }
+    .env-config-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px 10px;
+    }
+    @media (max-width: 560px) {
+      .env-config-grid { grid-template-columns: minmax(0, 1fr); }
+    }
+    .env-cfg-item {
+      background: var(--kb-surface);
+      border: 1px solid var(--kb-border);
+      border-radius: var(--kb-radius-sm);
+      padding: 7px 10px;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .env-cfg-label {
+      font-size: 11px;
+      color: var(--kb-text-muted);
+      font-weight: 600;
+    }
+    .env-cfg-val {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--kb-text-strong);
+      line-height: 1.4;
+      overflow-wrap: anywhere;
+    }
+
+    /* Full-height AI executive summary panel (Right Hero Card, height locked to Left Card) */
+    .hero-ai-slot {
+      position: relative;
+      min-width: 0;
+    }
+    .hero-ai-card {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow: hidden;
+    }
+    .ai-summary-head {
+      flex: 0 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .ai-summary-title {
+      margin: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 15.5px;
+      font-weight: 700;
+      color: var(--kb-text-strong);
+    }
+    .ai-summary-source {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--kb-text-muted);
+      padding: 1px 7px;
+      border-radius: 999px;
+      border: 1px solid var(--kb-border);
+      background: var(--kb-surface-muted);
+    }
+    .ai-verdict-banner {
+      flex: 0 0 auto;
+      padding: 11px 14px;
+      border-radius: var(--kb-radius-md);
+      border: 1px solid var(--kb-border);
+      border-left: 3px solid var(--kb-brand);
+      background: var(--kb-surface-muted);
+    }
+    .ai-verdict-banner.tone-ok { border-left-color: var(--kb-ok); }
+    .ai-verdict-banner.tone-fail { border-left-color: var(--kb-fail); }
+    .ai-verdict-banner.tone-block { border-left-color: var(--kb-block); }
+    .ai-verdict-banner.tone-neutral { border-left-color: var(--kb-brand); }
+    .ai-summary-headline {
+      margin: 0;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--kb-text-strong);
+      line-height: 1.5;
+    }
+    .ai-sections {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      scrollbar-width: thin;
+      padding-right: 4px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .ai-sections:focus-visible {
+      outline: 2px solid var(--kb-brand);
+      outline-offset: 2px;
+      border-radius: 6px;
+    }
+    .ai-sec-block {
+      display: grid;
+      gap: 5px;
+    }
+    .ai-sec-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--kb-text-sec);
+      letter-spacing: 0.02em;
+    }
+    .ai-summary-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 5px;
+      font-size: 13px;
+      color: var(--kb-text);
+      line-height: 1.55;
+    }
+    .ai-summary-list li {
+      display: flex;
+      align-items: baseline;
+      gap: 7px;
+    }
+    .ai-summary-list li::before {
+      content: "";
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--kb-brand);
+      flex-shrink: 0;
+      transform: translateY(-1px);
+    }
+    .hero-ai-card.tone-ok .ai-summary-list li::before { background: var(--kb-ok); }
+    .hero-ai-card.tone-fail .ai-summary-list li::before { background: var(--kb-fail); }
+    .hero-ai-card.tone-block .ai-summary-list li::before { background: var(--kb-block); }
+    .ai-summary-foot {
+      flex: 0 0 auto;
+      margin-top: auto;
+      padding-top: 10px;
+      border-top: 1px dashed var(--kb-border);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 12.5px;
+      color: var(--kb-text-sec);
+    }
+    .ai-jump-link {
+      background: transparent;
+      border: 0;
+      padding: 0;
+      font-family: inherit;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--kb-brand);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .ai-jump-link:hover { text-decoration: underline; }
+    .ai-jump-link:focus-visible { outline: 2px solid var(--kb-brand); outline-offset: 2px; border-radius: 3px; }
+
+    /* Section kickers & Drawer detail blocks */
     .section-kicker {
       font-size: 11.5px;
       font-weight: 700;
@@ -552,14 +763,6 @@
       letter-spacing: 0.04em;
       color: var(--kb-text-muted);
       margin: 0 0 12px;
-    }
-    .telemetry-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px 14px;
-    }
-    @media (max-width: 560px) {
-      .telemetry-grid { grid-template-columns: minmax(0, 1fr); }
     }
     .tele-item {
       background: var(--kb-surface-muted);
@@ -644,7 +847,7 @@
       display: grid;
       grid-template-columns: minmax(300px, 380px) minmax(0, 1fr);
       gap: 16px;
-      align-items: start;
+      align-items: center;
     }
     @media (max-width: 980px) {
       .cap-grid { grid-template-columns: minmax(0, 1fr); }
@@ -689,20 +892,28 @@
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
       gap: 12px;
+      align-items: stretch;
     }
     .domain-card {
       background: var(--kb-surface-muted);
       border: 1px solid var(--kb-border);
       border-radius: var(--kb-radius-md);
       padding: 12px 14px;
-      display: grid;
-      gap: 8px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: stretch;
+      gap: 10px;
     }
     .domain-card.highlighted {
       border-color: var(--kb-brand);
       box-shadow: 0 0 0 1px var(--kb-brand-border);
     }
     .domain-head {
+      flex: 0 0 auto;
+      min-height: 22px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--kb-border);
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -724,16 +935,22 @@
       font-size: 11.5px;
       color: var(--kb-text-muted);
       font-weight: 600;
+      flex-shrink: 0;
+      white-space: nowrap;
     }
     .tag-cloud {
       display: flex;
       flex-wrap: wrap;
+      align-items: flex-start;
+      align-content: flex-start;
       gap: 6px;
     }
     .tag-chip {
+      flex: 0 0 auto;
       display: inline-flex;
       align-items: center;
       gap: 5px;
+      min-height: 26px;
       padding: 3px 8px;
       border-radius: 6px;
       border: 1px solid var(--kb-border);
@@ -741,6 +958,8 @@
       color: var(--kb-text);
       font-family: var(--kb-font-mono);
       font-size: 11.5px;
+      line-height: 1.25;
+      white-space: nowrap;
       cursor: pointer;
     }
     .tag-chip:hover { border-color: var(--kb-brand); color: var(--kb-brand); }
@@ -1124,6 +1343,9 @@
       .topbar-actions, .filter-bar, .preview-banner, .tablist, .copy-mini { display: none !important; }
       body { background: #ffffff; color: #111827; }
       .panel-card, .case-item { box-shadow: none; break-inside: avoid; }
+      .hero-ai-slot { position: static; }
+      .hero-ai-card { position: static; max-height: none; overflow: visible; }
+      .ai-sections { overflow: visible; }
     }
   </style>
 </head>
@@ -1172,9 +1394,9 @@
       </div>
     </div>
 
-    <!-- Hero Verdict + Dual Rings + Engineering Telemetry -->
-    <section class="hero-grid" aria-label="执行结论与环境遥测">
-      <div class="panel-card">
+    <!-- Hero Verdict + Dual Rings + Env Config & Dedicated AI Summary Panel -->
+    <section class="hero-grid" aria-label="执行结论、环境配置与AI总结">
+      <div class="panel-card hero-verdict-card">
         <div class="verdict-header">
           <h1 class="verdict-title" id="verdict-title">执行结论加载中...</h1>
           <span class="pill" id="verdict-pill">—</span>
@@ -1221,11 +1443,34 @@
             <button type="button" class="legend-btn" data-status-filter="not_run" aria-pressed="false"><span class="dot notrun"></span>未执行 <span class="tabular" id="cnt-notrun">10</span></button>
           </div>
         </div>
+
+        <section class="env-config-box" id="env-config-box" aria-label="测试环境关键配置">
+          <div class="env-config-head">
+            <span class="env-config-title">测试环境关键配置</span>
+            <span class="env-config-source" id="env-config-source">环境参数</span>
+          </div>
+          <div class="env-config-grid" id="env-config-grid"></div>
+        </section>
       </div>
 
-      <div class="panel-card">
-        <h2 class="section-kicker">运行遥测与工程元数据（AGENTS.md 合规基线）</h2>
-        <div class="telemetry-grid" id="telemetry-grid"></div>
+      <div class="hero-ai-slot">
+        <section class="panel-card hero-ai-card tone-neutral" id="ai-summary-card" aria-label="AI 总结分析">
+          <div class="ai-summary-head">
+            <h2 class="ai-summary-title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:var(--kb-brand);flex-shrink:0;"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z"/><path d="M5 3v4M3 5h4M19 17v4M17 19h4"/></svg>
+              AI 总结分析
+            </h2>
+            <span class="ai-summary-source" id="ai-summary-source">数据自动归纳</span>
+          </div>
+          <div class="ai-verdict-banner tone-neutral" id="ai-verdict-banner">
+            <p class="ai-summary-headline" id="ai-summary-headline">—</p>
+          </div>
+          <div class="ai-sections" id="ai-summary-sections" tabindex="0" aria-label="AI 分析明细（可滚动）"></div>
+          <div class="ai-summary-foot">
+            <span id="ai-summary-rec"></span>
+            <button type="button" class="ai-jump-link" data-jump-tab="tab-facts">查看事实与推断 →</button>
+          </div>
+        </section>
       </div>
     </section>
 
@@ -1476,6 +1721,41 @@
       "evidencePaths": ["tests/cases/KB-SUITE-001.md"]
     }
   ],
+  "envConfig": {
+    "source": "模板内置示例配置",
+    "primaryModel": "kimi-k2.8-preview（1M 窗口）",
+    "fallbackModel": "deepseek-v4-1-flash（1M 窗口）",
+    "imageGenModel": "gpt-image-2.6-sunburst → gemini-3-pro-image",
+    "visionFollowupModel": "MiniMax-M3（视觉 / 追问）",
+    "compactionThreshold": "400,000 tokens · trigger-messages=0",
+    "toolLimits": "read_file ≤ 64,000 字符 · K8s 沙箱（180s 超时）"
+  },
+  "aiSummary": {
+    "source": "模板内置示例",
+    "headline": "演示视图：CASE-01 与 CASE-08 共 2 项通过（验证 8/23 项能力），核心链路运行稳定。",
+    "sections": [
+      {
+        "title": "核心结论",
+        "items": [
+          "已测 CASE-01（对话与缓存，命中率 97.4%）与 CASE-08（运行控制与积分对账）均通过。",
+          "跨轮缓存复用正常，断连重放、并发拦截、真中断与四方账本一致。"
+        ]
+      },
+      {
+        "title": "效能与资源",
+        "items": [
+          "演示总耗时 2m 15s，净消耗 14.5 积分，沙箱无残留。"
+        ]
+      },
+      {
+        "title": "覆盖缺口",
+        "items": [
+          "尚有 8 项用例处于未执行演示态。"
+        ]
+      }
+    ],
+    "recommendation": "可通过「数据加载与离线导出」导入真实运行结果。"
+  },
   "notes": {
     "facts": [
       "模板直接内嵌了 KB-SUITE-001 全集 10 个用例与 6 大能力域 23 项能力定义。",
@@ -1845,12 +2125,14 @@
           counts,
           executed,
           totalCases: mergedCases.length,
-          totalTags,
-          verifiedTags,
-          passedTags,
-          domainStats,
-          notes: Object.assign({ facts: [], inferences: [], gaps: [], calibrations: [] }, (raw && raw.notes) || {})
-        };
+            totalTags,
+            verifiedTags,
+            passedTags,
+            domainStats,
+            envConfig: raw && raw.envConfig && typeof raw.envConfig === "object" ? raw.envConfig : null,
+            aiSummary: raw && raw.aiSummary && typeof raw.aiSummary === "object" ? raw.aiSummary : null,
+            notes: Object.assign({ facts: [], inferences: [], gaps: [], calibrations: [] }, (raw && raw.notes) || {})
+          };
       }
 
       /* =====================================================================
@@ -1969,33 +2251,249 @@
           btn.setAttribute("aria-pressed", String(uiState.statusFilter === btn.dataset.statusFilter));
         }
 
-        // Telemetry grid
-        const m = model.meta;
-        const pointsStr = m.pointsConsumed != null
-          ? `${m.pointsConsumed} 积分${m.pointsBefore != null && m.pointsAfter != null ? `（${m.pointsBefore} → ${m.pointsAfter}）` : ""}`
-          : "未统计";
-        const worktreeStr = m.worktreeDirty === null ? "未知" : (m.worktreeDirty ? "有未提交变更" : "工作树干净");
-        const cleanLabel = CLEANUP_LABEL[m.cleanupStatus] || m.cleanupStatus || "未核验";
+        renderEnvConfig(model);
+        renderAiSummary(model);
+      }
 
-        const items = [
-          { label: "Run ID", val: m.runId, copy: m.runId, mono: true, wide: true },
-          { label: "目标环境 / Langfuse", val: `${String(m.env || "—").toUpperCase()} / ${m.langfuseEnv || "—"}` },
-          { label: "执行时间窗与耗时", val: `${m.startedAt || "—"}（${formatDuration(m.durationMs)}）` },
-          { label: "工作区 Git Commit", val: `${String(m.gitCommit || "—").slice(0, 12)} · ${worktreeStr}`, copy: m.gitCommit, mono: true },
-          { label: "主模型 / 积分变动", val: `${m.modelSummary || "—"} · ${pointsStr}` },
-          { label: "Task ID", val: m.taskId || "无（单次请求）" },
-          { label: "数据自清理结论", val: `${cleanLabel}${m.cleanupNote ? `（${m.cleanupNote}）` : ""}` }
+      function renderEnvConfig(model) {
+        const gridEl = document.getElementById("env-config-grid");
+        const srcEl = document.getElementById("env-config-source");
+        if (!gridEl || !srcEl) return;
+
+        const cfg = model.envConfig || {};
+        const envUpper = String((model.meta && model.meta.env) || "ENV").toUpperCase();
+        srcEl.textContent = cfg.source || `${envUpper} 环境配置`;
+
+        const tiles = [
+          { label: "主模型（Primary）", val: cfg.primaryModel || (model.meta && model.meta.modelSummary) || "未采集" },
+          { label: "备模型（Fallback）", val: cfg.fallbackModel || "未采集" },
+          { label: "生图模型（Image Gen）", val: cfg.imageGenModel || "未采集" },
+          { label: "视觉 / 追问模型", val: cfg.visionFollowupModel || "未采集" },
+          { label: "上下文压缩阈值", val: cfg.compactionThreshold || "未采集" },
+          { label: "文件读取 / 沙箱限额", val: cfg.toolLimits || "未采集" }
         ];
 
-        document.getElementById("telemetry-grid").innerHTML = items.map((it) => `
-          <div class="tele-item${it.wide ? " wide" : ""}">
-            <div class="tele-label">${escHtml(it.label)}</div>
-            <div class="tele-val${it.mono ? " mono" : ""}">
-              <span>${escHtml(it.val)}</span>
-              ${it.copy && it.copy !== "—" ? `<button type="button" class="copy-mini" data-copy="${escHtml(it.copy)}">复制</button>` : ""}
-            </div>
+        gridEl.innerHTML = tiles.map((it) => `
+          <div class="env-cfg-item">
+            <div class="env-cfg-label">${escHtml(it.label)}</div>
+            <div class="env-cfg-val">${escHtml(it.val)}</div>
           </div>
         `).join("");
+      }
+
+      const CASE_SHORT_LABEL = {
+        "CASE-01": "对话与缓存",
+        "CASE-02": "上下文压缩",
+        "CASE-03": "长期记忆与异常兜底",
+        "CASE-04": "子Agent与图文交付",
+        "CASE-05": "个人MCP连接器",
+        "CASE-06": "定时任务生命周期",
+        "CASE-07": "沙箱文件与联网抓取",
+        "CASE-08": "运行控制与积分对账",
+        "CASE-09": "个人Skill生命周期",
+        "CASE-10": "AI生图与COS闭环"
+      };
+
+      function compactCaseIssue(c, targetStatus) {
+        const steps = Array.isArray(c.steps) ? c.steps : [];
+        const hit = steps.find((s) => s && s.status === targetStatus);
+        if (hit && hit.name) {
+          const act = hit.actual ? String(hit.actual).slice(0, 36) : "";
+          return act ? `${hit.name}（${act}）` : hit.name;
+        }
+        const raw = String(c.summary || c.goal || "").trim();
+        return raw.length > 52 ? `${raw.slice(0, 52)}...` : raw;
+      }
+
+      function buildAutoAiSummary(model) {
+        const { counts, executed, totalCases, verifiedTags, totalTags, meta } = model;
+        const m = meta || {};
+        const cleanLabel = CLEANUP_LABEL[m.cleanupStatus] || m.cleanupStatus || "未核验";
+        const ptsText = m.pointsConsumed != null ? `${m.pointsConsumed} 积分` : "未统计积分";
+        const uncoveredDomains = model.domainStats.filter((d) => d.executed === 0).map((d) => d.name);
+        const gapLine = uncoveredDomains.length > 0
+          ? `尚有 ${counts.not_run} 项未执行，待覆盖「${uncoveredDomains.join("」「")}」（未执行不计入失败）。`
+          : `全集 6 大能力域 ${totalTags}/${totalTags} 项核心能力均已完成验证。`;
+
+        if (executed === 0) {
+          return {
+            tone: "tone-neutral",
+            headline: `尚无已执行用例数据，全部 ${totalCases} 个回归用例处于待测状态。`,
+            sections: [
+              {
+                title: "核心结论",
+                items: [`当前 0/${totalCases} 已执行（0/${totalTags} 能力标签），暂无异常或通过数据。`]
+              },
+              {
+                title: "效能与资源",
+                items: ["本次暂无耗时与积分消耗记录。"]
+              },
+              {
+                title: "覆盖缺口",
+                items: [gapLine]
+              }
+            ],
+            recommendation: "建议优先执行 CASE-01（对话与缓存）或 CASE-08（运行控制与积分对账）。"
+          };
+        }
+
+        const passedCases = model.cases.filter((c) => c.status === "passed");
+        const failedCases = model.cases.filter((c) => c.status === "failed");
+        const blockedCases = model.cases.filter((c) => c.status === "blocked");
+        const executedCases = model.cases.filter((c) => c.status !== "not_run");
+        const passPct = Math.round((counts.passed / executed) * 100);
+        const coveredDomains = model.domainStats.filter((d) => d.executed > 0).map((d) => d.name);
+
+        const slowest = executedCases.reduce((best, c) => {
+          const bd = Number(best && best.durationMs) || -1;
+          const cd = Number(c && c.durationMs) || -1;
+          return cd > bd ? c : best;
+        }, null);
+        const slowestNote = slowest && slowest.durationMs != null
+          ? `；最慢用例 ${slowest.id}（${formatDuration(slowest.durationMs)}）`
+          : "";
+
+        const costCases = executedCases.filter((c) => c.metrics && typeof c.metrics.points === "number");
+        let costShareNote = "";
+        if (costCases.length >= 2) {
+          const totalCasePts = costCases.reduce((sum, c) => sum + c.metrics.points, 0);
+          if (totalCasePts > 0) {
+            const top = costCases.reduce((best, c) => (c.metrics.points > best.metrics.points ? c : best), costCases[0]);
+            const share = Math.round((top.metrics.points / totalCasePts) * 100);
+            costShareNote = `（其中 ${top.id} 占 ${share}% / ${top.metrics.points} 积分）`;
+          }
+        }
+
+        const cacheCases = executedCases.filter((c) => c.metrics && c.metrics.cacheHitRate != null);
+        const cacheNote = cacheCases.length
+          ? cacheCases.map((c) => `${c.id} 缓存命中 ${c.metrics.cacheHitRate}%`).join("，")
+          : "";
+
+        const costSection = {
+          title: "效能与资源",
+          items: [
+            `累计耗时 ${formatDuration(m.durationMs)}${slowestNote}；净消耗 ${ptsText}${costShareNote}。`,
+            `数据清理：${cleanLabel}。`
+          ]
+        };
+
+        if (counts.failed > 0) {
+          const failedIds = failedCases.map((c) => c.id).join(" / ");
+          const firstFailed = failedCases[0];
+          const capItems = [
+            `执行通过率 ${passPct}%（通过 ${counts.passed}、失败 ${counts.failed}、阻塞 ${counts.blocked}），已验证 ${verifiedTags}/${totalTags} 项能力。`,
+            `主要问题：${firstFailed.id} ${CASE_SHORT_LABEL[firstFailed.id] || ""} — ${compactCaseIssue(firstFailed, "failed")}。`
+          ];
+          if (counts.blocked > 0) {
+            capItems.push(`阻塞用例：${blockedCases.map((c) => `${c.id}（${compactCaseIssue(c, "blocked")}）`).join("；")}。`);
+          }
+          if (cacheNote) capItems.push(`关键指标：${cacheNote}。`);
+
+          return {
+            tone: "tone-fail",
+            headline: `已执行 ${executed}/${totalCases} 项用例：发现 ${counts.failed} 项失败（${failedIds}），通过率 ${passPct}%。`,
+            sections: [
+              { title: "核心结论", items: capItems },
+              costSection,
+              { title: "覆盖缺口", items: [gapLine] }
+            ],
+            recommendation: `优先定位并修复 ${firstFailed.id} 失败检查项，完成后复测受影响用例。`
+          };
+        }
+
+        if (counts.blocked > 0) {
+          const blockedIds = blockedCases.map((c) => c.id).join(" / ");
+          const firstBlocked = blockedCases[0];
+          const capItems = [];
+          if (passedCases.length > 0) {
+            capItems.push(`已通过 ${passedCases.map((c) => c.id).join(" / ")}（未发现功能异常），累计验证 ${verifiedTags}/${totalTags} 项能力。`);
+          }
+          capItems.push(`主要阻塞：${firstBlocked.id} ${CASE_SHORT_LABEL[firstBlocked.id] || ""} — ${compactCaseIssue(firstBlocked, "blocked")}。`);
+          if (cacheNote) capItems.push(`关键指标：${cacheNote}。`);
+
+          return {
+            tone: "tone-block",
+            headline: `已执行 ${executed}/${totalCases} 项用例：${counts.passed} 项通过、${counts.blocked} 项受环境前置条件阻塞（${blockedIds}）。`,
+            sections: [
+              { title: "核心结论", items: capItems },
+              costSection,
+              { title: "覆盖缺口", items: [gapLine] }
+            ],
+            recommendation: `优先恢复 ${blockedIds} 依赖的外部环境或前置条件后重跑，确认链路闭环。`
+          };
+        }
+
+        const passedIds = passedCases.map((c) => c.id).join(" / ");
+        const headline = passedCases.length <= 4
+          ? `${passedIds} 共 ${executed} 项用例全部通过（验证 ${verifiedTags}/${totalTags} 项能力），主链路稳定无异常。`
+          : `已执行 ${executed}/${totalCases} 项用例全部通过（验证 ${verifiedTags}/${totalTags} 项能力），核心链路运行稳定。`;
+
+        const capItems = [
+          `已覆盖「${coveredDomains.join("」「")}」能力域，功能校验均符合预期。`
+        ];
+        if (cacheNote) capItems.push(`关键指标：${cacheNote}。`);
+        capItems.push(`通过项摘要：${passedCases.slice(0, 4).map((c) => `${c.id}（${CASE_SHORT_LABEL[c.id] || c.domain}）`).join("、")}${passedCases.length > 4 ? " 等" : ""}。`);
+
+        let recommendation;
+        if (counts.not_run > 0) {
+          const notRunIds = model.cases.filter((c) => c.status === "not_run").map((c) => c.id);
+          const priorityPick = ["CASE-01", "CASE-08", "CASE-02", "CASE-07"].filter((id) => notRunIds.includes(id));
+          const nextTargets = (priorityPick.length ? priorityPick : notRunIds).slice(0, 2);
+          recommendation = `其余 ${counts.not_run} 项用例本次未执行；全量回归建议优先补测 ${nextTargets.join(" 与 ")}。`;
+        } else {
+          recommendation = `全量 ${totalCases}/${totalCases} 项用例（${totalTags}/${totalTags} 项能力）均已验证通过，满足发布放行条件。`;
+        }
+
+        return {
+          tone: "tone-ok",
+          headline,
+          sections: [
+            { title: "核心结论", items: capItems },
+            costSection,
+            { title: "覆盖缺口", items: [gapLine] }
+          ],
+          recommendation
+        };
+      }
+
+      function renderAiSummary(model) {
+        const card = document.getElementById("ai-summary-card");
+        const banner = document.getElementById("ai-verdict-banner");
+        const secContainer = document.getElementById("ai-summary-sections");
+        if (!card || !secContainer) return;
+
+        const auto = buildAutoAiSummary(model);
+        const explicit = model.aiSummary;
+        const hasExplicitSections = Boolean(explicit && Array.isArray(explicit.sections) && explicit.sections.length);
+        const hasExplicitHighlights = Boolean(explicit && Array.isArray(explicit.highlights) && explicit.highlights.length);
+        const hasExplicit = Boolean(explicit && (explicit.headline || hasExplicitSections || hasExplicitHighlights || explicit.recommendation));
+
+        const sourceText = hasExplicit ? (explicit.source || "实测总结") : "数据自动归纳";
+        const headline = (hasExplicit && explicit.headline) || auto.headline;
+        let sections = auto.sections;
+        if (hasExplicitSections) {
+          sections = explicit.sections;
+        } else if (hasExplicitHighlights) {
+          sections = [{ title: "核心分析要点", items: explicit.highlights }];
+        }
+        const rec = (hasExplicit && explicit.recommendation) || auto.recommendation;
+
+        card.className = `panel-card hero-ai-card ${auto.tone}`;
+        if (banner) banner.className = `ai-verdict-banner ${auto.tone}`;
+        document.getElementById("ai-summary-source").textContent = sourceText;
+        document.getElementById("ai-summary-headline").textContent = headline;
+        secContainer.innerHTML = sections.map((sec) => {
+          const items = Array.isArray(sec.items) ? sec.items : [];
+          return `
+            <div class="ai-sec-block">
+              <div class="ai-sec-title">${escHtml(sec.title || "分析要点")}</div>
+              <ul class="ai-summary-list">
+                ${items.map((item) => `<li>${escHtml(item)}</li>`).join("")}
+              </ul>
+            </div>
+          `;
+        }).join("");
+        document.getElementById("ai-summary-rec").textContent = rec;
       }
 
       function renderRadar(domainStats) {
@@ -2549,6 +3047,15 @@
         if (demoBtn) {
           renderAll(buildDemoData(demoBtn.dataset.demo), { resetScope: true });
           showToast("已切换演示视图");
+          return;
+        }
+        const jumpBtn = e.target.closest("[data-jump-tab]");
+        if (jumpBtn) {
+          const targetTab = document.getElementById(jumpBtn.dataset.jumpTab);
+          if (targetTab) {
+            selectTab(targetTab, true);
+            tablist.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          }
         }
       });
 
@@ -2659,6 +3166,15 @@
               cleanupStatus: "passed",
               cleanupNote: "测试 Skill 已启用并物理删除"
             },
+            envConfig: {
+              source: "单用例演示配置",
+              primaryModel: "kimi-k2.8-preview（1M 窗口）",
+              fallbackModel: "deepseek-v4-1-flash（1M 窗口）",
+              imageGenModel: "gpt-image-2.6-sunburst → gemini-3-pro-image",
+              visionFollowupModel: "MiniMax-M3（视觉 / 追问）",
+              compactionThreshold: "400,000 tokens · trigger-messages=0",
+              toolLimits: "read_file ≤ 64,000 字符 · K8s 沙箱（180s 超时）"
+            },
             cases: [
               {
                 id: "CASE-09",
@@ -2697,10 +3213,19 @@
               durationMs: 480000,
               gitCommit: "7fb5d4bd",
               worktreeDirty: false,
-              modelSummary: "deepseek-v4-1-flash",
+              modelSummary: "kimi-k2.8-preview",
               pointsConsumed: 158.2,
               cleanupStatus: "passed",
               cleanupNote: "全量 10 个用例无残留"
+            },
+            envConfig: {
+              source: "全量演示环境配置",
+              primaryModel: "kimi-k2.8-preview（1M 窗口）",
+              fallbackModel: "deepseek-v4-1-flash（1M 窗口）",
+              imageGenModel: "gpt-image-2.6-sunburst → gemini-3-pro-image",
+              visionFollowupModel: "MiniMax-M3（视觉 / 追问）",
+              compactionThreshold: "400,000 tokens · trigger-messages=0",
+              toolLimits: "read_file ≤ 64,000 字符 · K8s 沙箱（180s 超时）"
             },
             cases: SUITE_CASES.map((c, idx) => ({
               id: c.id,
@@ -2712,6 +3237,25 @@
               metrics: { points: Number((2.5 + idx * 1.4).toFixed(2)) },
               cleanup: { status: "passed", note: "演示清理完成" }
             })),
+            aiSummary: {
+              source: "全量演示摘要",
+              headline: "全量 10/10 用例（23/23 能力标签）全部通过，六大核心能力域无短板。",
+              sections: [
+                {
+                  title: "核心结论",
+                  items: [
+                    "对话缓存、上下文压缩、长期记忆、MCP/Skill、定时任务与 AI 生图全部通过。"
+                  ]
+                },
+                {
+                  title: "效能与资源",
+                  items: [
+                    "演示全套耗时 8m 0s，累计消耗 158.2 积分，测试数据零残留。"
+                  ]
+                }
+              ],
+              recommendation: "全量 10/10 用例通过，满足当前版本回归放行标准。"
+            },
             notes: {
               facts: ["全量 10/10 用例（23/23 能力标签）全部覆盖通过。"],
               inferences: [],
@@ -2734,10 +3278,19 @@
             durationMs: 184000,
             gitCommit: "7fb5d4bd",
             worktreeDirty: true,
-            modelSummary: "deepseek-v4-1-flash",
+            modelSummary: "kimi-k2.8-preview",
             pointsConsumed: 131.2,
             cleanupStatus: "passed",
             cleanupNote: "除阻塞/失败项外均完成自清理"
+          },
+          envConfig: {
+            source: "测试演示环境配置",
+            primaryModel: "kimi-k2.8-preview（演示）",
+            fallbackModel: "deepseek-v4-1-flash（演示）",
+            imageGenModel: "gpt-image-2.6-sunburst（演示）",
+            visionFollowupModel: "MiniMax-M3（演示）",
+            compactionThreshold: "240,000 tokens · trigger-messages=0",
+            toolLimits: "read_file ≤ 64,000 字符 · 沙箱开启"
           },
           cases: [
             {
@@ -2785,6 +3338,27 @@
               cleanup: { status: "passed", note: "文件库为空，原链接返回 404" }
             }
           ],
+          aiSummary: {
+            source: "局部四态演示",
+            headline: "局部 4/10 用例：通过 2、失败 1（CASE-05）、阻塞 1（CASE-06），通过率 50%。",
+            sections: [
+              {
+                title: "核心结论",
+                items: [
+                  "【失败】CASE-05：MCP 连接器停用后仍出现 1 次越权调用。",
+                  "【阻塞】CASE-06：定时执行器离线超时，属环境阻塞非功能缺陷。",
+                  "【通过】CASE-09（个人Skill）与 CASE-10（AI生图）全通过。"
+                ]
+              },
+              {
+                title: "效能与资源",
+                items: [
+                  "总耗时 3m 4s，净耗 131.2 积分；全部临时测试资产已清理无残留。"
+                ]
+              }
+            ],
+            recommendation: "建议优先修复 CASE-05 停用缓存隔离失效并解除 CASE-06 阻塞后复测。"
+          },
           notes: {
             facts: ["局部执行 4/10 用例（通过 2、失败 1、阻塞 1），其余 6 项未执行。"],
             inferences: ["仅在异常排查演示中出现停用隔离失败与调度器离线。"],
