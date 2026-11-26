@@ -58,6 +58,8 @@ KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js s
 | `#web-fetch` | 公网网页抓取（`web_fetch`）及默认禁用 `web_search` 隔离验证 | `CASE-07` | ✅ 已覆盖 |
 | `#todo-plan` | 多步任务结构化待办清单维护（`todo_write`） | `CASE-07` | ✅ 已覆盖 |
 | `#tool-result-eviction` | 大体积工具输出自动卸载预览与命令行超时预算前置拦截（`requireShellBudget`） | `CASE-07` | ✅ 已覆盖 |
+| `#run-control` | SSE 断连不断执行（`/run/active` + `/run/observe` 全量重放续接）、同会话并发 `4006` 拦截、`/run/cancel` 真实中断（无后台写入泄漏、防会话锁死） | `CASE-08` | ✅ 已覆盖 |
+| `#points-billing` | 积分账户余额扣减、SSE `usage`、轮次消费状态（`SUCCEEDED`/`CANCELLED`）、逐笔明细幂等与并发被拒零计费四方对账 | `CASE-08` | ✅ 已覆盖 |
 
 ### 3.2 测试用例索引
 
@@ -70,6 +72,7 @@ KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js s
 | [CASE-05](#case-05个人-mcp-连接器全生命周期与安全边界验证) | 个人 MCP 连接器全生命周期与安全边界验证 | `#mcp-connector` | P1 | 已验证 |
 | [CASE-06](#case-06定时任务全生命周期管理与触发隔离验证) | 定时任务全生命周期管理与触发隔离验证 | `#scheduled-task` | P1 | 已验证 |
 | [CASE-07](#case-07框架文件检索任务规划联网抓取与大输出卸载验证) | 框架文件检索、任务规划、联网抓取与大输出卸载验证 | `#fs-code-tools` `#web-fetch` `#todo-plan` `#tool-result-eviction` | P1 | 已验证 |
+| [CASE-08](#case-08运行态控制断连重连并发拦截真中断与积分计费对账验证) | 运行态控制（断连重连／并发拦截／真中断）与积分计费对账验证 | `#run-control` `#points-billing` | P1 | 已验证 |
 | *后续扩展* | *核心底座按需扩展中（其余专项见 [KB-RELEASE-SMOKE-001.md](KB-RELEASE-SMOKE-001.md)）* | — | — | — |
 
 ---
@@ -363,6 +366,52 @@ KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js s
   2. **超长输出卸载生效**：第 2 轮 90k `execute` 输出触发卸载至 `large_tool_results/`、保留首尾 `6,000` 字符预览且不触发 `4054` 上下文超限。
   3. **预算参数拦截生效**：`execute(timeout=600)` 在命令启动前即返回总预算校验错误且未重试执行。
   4. **无残留自清理**：第 3 轮删除 `case07_tmp` 及本会话生成的卸载文件，工作区恢复干净。
+
+---
+
+### CASE-08：运行态控制（断连重连／并发拦截／真中断）与积分计费对账验证
+- **覆盖标签**：`#run-control` `#points-billing`
+- **测试目标**：验证交互式运行态控制 4 项核心契约（SSE 断连不断执行与 `/run/observe` 全量重放续接、同会话并发 `4006` 拦截且不扰乱原 Run、`/run/cancel` 真实打断多步写任务不泄漏后台写入、取消后立即续问不锁死会话），并在同一组执行上完成积分账户余额、SSE `usage`、轮次消费汇总 `/points/consumptions`、逐笔流水 `/points/records` 与 Langfuse `LF_ENV` 调用轨迹的四方精确对账。
+- **前置条件与边界说明**：
+  - **零外部依赖与余额要求**：全环境内置 `execute`、`write_file` 与运行控制／积分中心接口，仅要求目标测试账号积分余额 `> 10` 且当前无运维窗口拦截（`GET /service/agent/api/v1/agent/maintenance` 返回 `enabled: false`）。
+  - **网关前缀与响应字段**：运行控制统一走 `<BASE_URL>/service/agent/api/v1/agent/run*`（均为 `POST`，其中 `/observe` 与 `/cancel` 的 `threadId` 为 URL Query 参数），积分中心统一走 `<BASE_URL>/web/agent/api/v1/points/{account,consumptions,records}`（均为 `POST`，分页列表字段为 **`data.resultlist`**，业务成功码 `code = 8`）；令牌缓存 `.runtime/cache/kuaibuddy-preprod/token.json` 的 Bearer 字段名为 **`accessToken`**。
+  - **基线锁定与非破坏边界**：执行前先运行 `kb_e2e.js login --force --json` 刷新登录态，**拍完 Step 0 基线后全程不再重复登录**（防内部虚拟账号重置余额干扰前后差值）。本用例**不测**打空余额 `6001`（防破坏公共测试账号）及 `/points/claim`（每日一次不幂等），同时执行期间避免同一账号并发跑其他对话干扰前后差值。
+  - **沙箱防泄漏守卫**：正常通过路径不会在沙箱生成 `case08_cancel_should_not_exist.txt`；自动化脚本需在 `finally` 中兜底检查，若发现意外泄漏则清理该测试文件并明确判失败。
+  - **已实测校准的关键平台口径**：
+    1. **取消中断与 Langfuse `GENERATION` 计数**：`InterruptMiddleware.onReasoning` 检测到取消信号并触发 `agentInterruptor.interrupt` 后仍可能放行至框架 `untilInterrupted` 截断，因此 Langfuse 中 `RUN_2` 允许出现 `1～2` 次 `GENERATION`；若出现第 2 次 `GENERATION`，其 `output` 必须为 `0` 且不产生 `DEDUCT` 扣费、不触发 `write_file`。
+    2. **追问建议对 `DEDUCT` 与 Langfuse 计数的影响**：`FollowupSuggestions` 使用独立 `ReActAgent("Followup")` 发起调用，其 OTel Trace（`invoke_agent Followup`）默认不携带 `sessionId` 与 `metadata.run_id`，但仍通过 `onToolUsageEnd` 将扣费归入主 Run。因此主 Run 下 `DEDUCT` 条数公式为：`count(run_id 下 output > 0 的有效 GENERATION) + (1 if SSE 含 CUSTOM(follow_up_suggestions) else 0)`。
+    3. **积分流水正负字段区分与取消态 `usage` 事件**：`/points/records` 中，`DEDUCT` 扣减金额记录在负值 **`balanceChange`**（`pointsDeducted = 0`），而 `CONSUME` 轮次汇总记录在正值 **`pointsDeducted`**（`balanceChange = 0`，每轮严格 1 条幂等）；当前实现中 `RunUsageEvents` 仅在 `RUN_FINISHED` 前下发 `CUSTOM(usage)`，取消终态（`CUSTOM(cancelled)`）不下发 `usage` SSE 事件，仅通过终态对账落入 `CONSUME` 与 `/consumptions`。
+    4. **Langfuse v4 字段组**：查询 `/api/public/v2/observations` 时建议传 `fields=core,basic,usage,model,time`（包含 `basic` 才会返回 span `name`），并通过 `langfuse_fetch.py`（`ProxyHandler({})`）直连内网观测地址。
+
+| 阶段 / 轮次 | 场景类型 | 固定输入提示词 / API 操作（Exact Prompt，执行时保持固定） | 预期交互行为 | 预期四方观测指标（API + SSE + Langfuse `LF_ENV`） |
+| :--- | :--- | :--- | :--- | :--- |
+| **Step 0**<br>（API 基线） | 刷新登录态与积分／活跃基线快照 | 1）`kb_e2e.js login --force --json`（之后全程复用 `accessToken`）；<br>2）`GET /service/agent/api/v1/agent/maintenance`；<br>3）`POST /web/agent/api/v1/points/account`（`{}`）记录 `balance_before`、`todayConsumed_before`；<br>4）`POST /service/agent/api/v1/agent/run/active`（`{}`） | 登录成功、无运维窗口、余额充足 | `code = 8`，`enabled = false`，`balance_before > 10` |
+| **Step 1**<br>（Turn 1，新开 `THREAD_ID`） | SSE 断连不断执行 + `/run/active` + 并发 `4006` + `/run/observe` 全量重放至完结 | 1）向 `POST /service/agent/api/v1/agent/run` 发起新会话：`请调用 execute 执行命令 python3 -c "import time; time.sleep(8); print('CASE08_OBS_STEP_DONE')"，命令完成后回复固定暗号 CASE08-OBSERVE-OK-8848，不要执行其他操作。`（记录 `RUN_1`）；<br>2）收到 `RUN_STARTED` 与首个 `TOOL_CALL_START`～`TOOL_CALL_END` 后**主动关闭 HTTP 响应流模拟 SSE 断连**；<br>3）调 `POST /service/agent/api/v1/agent/run/active`；<br>4）向**同一 `THREAD_ID`** 并发发起 `POST /service/agent/api/v1/agent/run`（文本：`并发冲突探测消息`，记录 `RUN_4006`）；<br>5）调 `POST /service/agent/api/v1/agent/run/observe?threadId=<THREAD_ID>` 持续读流至结束；<br>6）结束后等待 1s 再查 `/run/active` | 断连后沙箱与后台正常跑完；并发请求在 `gate()` 被拦截且不扰乱原 Run；`/observe` 从头重放并尾随交付暗号，结束后释放活跃态 | 1. 断连后 `/run/active` **包含** `THREAD_ID`；<br>2. 并发请求返回 `HTTP 200` SSE `RUN_ERROR` 且 **`code == "4006"`**；<br>3. `/run/observe` 从 `RUN_STARTED` 逐条一致重放断连前事件并尾随 `TOOL_CALL_RESULT`、回复含 **`CASE08-OBSERVE-OK-8848`**、`CUSTOM(usage)`（记 `sse_points_1 > 0`）与 **`RUN_FINISHED`**；<br>4. 结束后 `/run/active` **不再包含** `THREAD_ID` |
+| **Step 2**<br>（Turn 2，同 `THREAD_ID`） | 两步写入型任务运行中 `/run/cancel` 真中断（防 `#93411`） | 1）同会话发送：`请严格按顺序分两步执行（禁止合并到同一条命令里）：第一步，先只调用 execute 执行命令 python3 -c "import time; time.sleep(10); print('CASE08_CANCEL_STEP1')"；第二步，等第一步工具返回结果后，再调用 write_file 在当前工作区写入文件 case08_cancel_should_not_exist.txt，内容为 SHOULD_NOT_EXIST，完成后再回复我。`（记录 `RUN_2`）；<br>2）首次收到 `TOOL_CALL_START` 时立即调用 `POST /service/agent/api/v1/agent/run/cancel?threadId=<THREAD_ID>`；<br>3）持续读取原 SSE 流至结束，等待 1.5s 再查 `/run/active` | `/run/cancel` 立即受理；第一步命令结束后在进入第二步推理前触发框架中断，不调用 `write_file`、以取消终态收尾并清除活跃登记 | 1. `/run/cancel` 返回 `code = 8`；<br>2. SSE 收到终态 **`CUSTOM(name="cancelled")`**（非 `RUN_FINISHED`/`RUN_ERROR`），工具列表仅 1 次 `运行命令`；<br>3. 结束后 `/run/active` **不再包含** `THREAD_ID`；<br>4. Langfuse（`fields=core,basic,usage,model,time`）`run_id=RUN_2` 实录 `GENERATION <= 2`（若为 2 则第 2 次 **`output == 0`**），**`write_file` 工具调用为 `0`** |
+| **Step 3**<br>（Turn 3，同 `THREAD_ID`） | 取消后立即续问防锁死（`#92963`）+ 沙箱无泄漏实证 | 紧接 Step 2 结束后立即向同 `THREAD_ID` 发送：`请调用 execute 执行命令 python3 -c "import os; print('ABSENT' if not os.path.exists('case08_cancel_should_not_exist.txt') else 'LEAKED')" 检查当前工作区，如实汇报输出；若输出 ABSENT 请明确回复“未生成且会话正常”。`（记录 `RUN_3`） | 立即正常受理并执行命令（无会话占用锁死），检查确认哨兵文件不存在后正常回复 | 1. 无 `4006` / `4050` / `RUN_ERROR`；<br>2. 工具输出包含 **`ABSENT`**（不含 `LEAKED`），回复包含 **`未生成且会话正常`**；<br>3. SSE 含 `CUSTOM(usage)`（记 `sse_points_3 > 0`）并以 `RUN_FINISHED` 结束 |
+| **Step 4**<br>（API + Langfuse 四方对账） | 积分余额、轮次状态、逐笔流水与被拒零计费核验 | 等待 3s 待终态对账落盘后查询：<br>1）`POST /web/agent/api/v1/points/account`（`{}`）；<br>2）`POST /web/agent/api/v1/points/consumptions`（`{"curPage":1,"pageSize":30}`）；<br>3）按 `queryId = RUN_1 / RUN_2 / RUN_3 / RUN_4006` 分别查 `POST /web/agent/api/v1/points/records` | 账户净扣等于三轮之和，三轮消费状态精准，每轮幂等仅 1 条 `CONSUME`，被拒并发请求零记录 | 1. **总账闭环**：`balance_before - balance_after == todayConsumed_after - todayConsumed_before == P1 + P2 + P3 > 0`；<br>2. **轮次状态**（`/consumptions` `data.resultlist`）：`RUN_1`/`RUN_3` 为 **`SUCCEEDED`**、`RUN_2` 为 **`CANCELLED`**，`RUN_4006` **不存在**；<br>3. **逐笔幂等与数量匹配**（`/records` `data.resultlist`）：`RUN_1`/`RUN_2`/`RUN_3` 各自**恰有 1 条 `CONSUME`**（`status="success"`）；每轮 `sum(-DEDUCT.balanceChange) == CONSUME.pointsDeducted == consumptions.pointsDeducted`（`RUN_1`/`RUN_3` 亦等于 SSE `CUSTOM(usage).value.points`）；每轮 `DEDUCT` 条数等于 `run_id` 下 `output > 0` 的 `GENERATION` 数（若 SSE 含 `follow_up_suggestions` 则额外 `+1`）；<br>4. **零误扣**：`RUN_4006` 在 `/records` 与 Langfuse 均为 **0 条** |
+
+- **跨环境执行命令模板**（将 `<ENV_FILE>`、`<LF_ENV>` 与 `<OUT_DIR>` 替换为实际值）：
+  ```bash
+  # 1. 刷新目标环境登录态（仅执行一次，Step 0 ~ Step 4 复用 .runtime/cache/kuaibuddy-preprod/token.json 中的 accessToken，严禁打印令牌）
+  KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js login --force --json > "<OUT_DIR>/login.json"
+
+  # 2. 通过自动化 Python 脚本串联执行 Step 0 ~ Step 4（纳入 try...finally 兜底清理可能泄漏的 case08_cancel_should_not_exist.txt）：
+  # - 运行控制接口：<BASE_URL>/service/agent/api/v1/agent/{maintenance,run,run/active,run/observe?threadId=...,run/cancel?threadId=...}
+  # - 积分账本接口：<BASE_URL>/web/agent/api/v1/points/{account,consumptions,records}（读取 data.resultlist）
+  # - Langfuse <LF_ENV> 对账（使用 ProxyHandler({}) 直连）：
+  #   FILTER='[{"column":"metadata","key":"run_id","operator":"=","value":"<RUN_ID>","type":"stringObject"}]'
+  #   GET <LANGFUSE_URL>/api/public/v2/observations?fields=core,basic,usage,model,time&filter=<URLENCODE(FILTER)>&limit=100
+  #   # 注：若某轮存在 CUSTOM(follow_up_suggestions) 且需要查追问子调用，可按当轮结束前后 3s 时间窗检索 name="invoke_agent Followup"
+  ```
+
+- **通过标准（双口径／四方验收）**：
+  1. **断连不中断与重放续接**：Step 1 断连后 `/run/active` 可见 `THREAD_ID`，`/run/observe` 从 `RUN_STARTED` 无损重放至 `CASE08-OBSERVE-OK-8848` 与 `RUN_FINISHED`，结束后 `/run/active` 清空。
+  2. **并发冲突拦截**：活跃期同会话并发 `/run` 返回 SSE `RUN_ERROR`（`code="4006"`），且不影响 `RUN_1` 正常完成。
+  3. **取消真实中断（防 `#93411`）**：Step 2 调用 `/run/cancel` 后收尾于 `CUSTOM(cancelled)`、`/run/active` 清空；Langfuse `RUN_2` `GENERATION <= 2`（第 2 次若存在则 `output == 0`）且 `write_file == 0`；Step 3 检查输出 `ABSENT`。
+  4. **取消不锁会话（防 `#92963`）**：Step 3 紧接取消后立即同会话发起可正常回复 `未生成且会话正常`，无 `4006`/`4050` 卡死。
+  5. **账本四方精确一致**：`/points/account` 净扣减与今日增量、`CUSTOM(usage)`（正常完结轮）、`/points/consumptions`（含 `SUCCEEDED` 与 `CANCELLED`）、`/points/records`（单 `CONSUME` 幂等 + `DEDUCT` 扣款与有效调用+追问次数匹配）金额完全闭合。
+  6. **异常请求零误扣**：被 `4006` 拒绝的 `RUN_4006` 在 `/points/consumptions`、`/points/records` 与 Langfuse `LF_ENV` 均为 `0` 条记录。
 
 ---
 
