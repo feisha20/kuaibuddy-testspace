@@ -46,8 +46,9 @@
       --l-notrun-bg: #f1f5f9;
       --l-notrun-border: #cbd5e1;
       --l-radar-grid: #e2e8f0;
-      --l-scroll-track: #f1f5f9;
-      --l-scroll-thumb: #94a3b8;
+      --l-scroll-track: transparent;
+      --l-scroll-thumb: rgb(100 116 139 / 0.34);
+      --l-scroll-shadow: rgb(15 23 42 / 0.08);
 
       /* Dark tokens aligned with ui-kuai-buddy html.dark-mode */
       --d-bg: #141414;
@@ -78,8 +79,9 @@
       --d-notrun-bg: rgba(148, 163, 184, 0.14);
       --d-notrun-border: rgba(148, 163, 184, 0.28);
       --d-radar-grid: rgba(255, 255, 255, 0.13);
-      --d-scroll-track: #1d1d1d;
-      --d-scroll-thumb: #64748b;
+      --d-scroll-track: transparent;
+      --d-scroll-thumb: rgb(255 255 255 / 0.24);
+      --d-scroll-shadow: rgb(0 0 0 / 0.32);
 
       /* Active resolved tokens (default light + @media fallback + light-dark modern path) */
       --kb-bg: var(--l-bg);
@@ -112,6 +114,7 @@
       --kb-radar-grid: var(--l-radar-grid);
       --kb-scroll-track: var(--l-scroll-track);
       --kb-scroll-thumb: var(--l-scroll-thumb);
+      --kb-scroll-shadow: var(--l-scroll-shadow);
 
       --kb-radius-lg: 14px;
       --kb-radius-md: 10px;
@@ -161,6 +164,7 @@
         --kb-radar-grid: var(--d-radar-grid);
         --kb-scroll-track: var(--d-scroll-track);
         --kb-scroll-thumb: var(--d-scroll-thumb);
+        --kb-scroll-shadow: var(--d-scroll-shadow);
       }
     }
 
@@ -196,6 +200,16 @@
         --kb-radar-grid: light-dark(var(--l-radar-grid), var(--d-radar-grid));
         --kb-scroll-track: light-dark(var(--l-scroll-track), var(--d-scroll-track));
         --kb-scroll-thumb: light-dark(var(--l-scroll-thumb), var(--d-scroll-thumb));
+        --kb-scroll-shadow: light-dark(var(--l-scroll-shadow), var(--d-scroll-shadow));
+      }
+    }
+
+    @media (prefers-contrast: more) {
+      :root {
+        --l-scroll-track: #f1f5f9;
+        --l-scroll-thumb: #475569;
+        --d-scroll-track: #141414;
+        --d-scroll-thumb: #cbd5e1;
       }
     }
 
@@ -680,11 +694,103 @@
       min-height: 0;
       overflow-y: auto;
       overscroll-behavior: contain;
+      scrollbar-gutter: stable;
       scrollbar-width: thin;
+      scrollbar-color: transparent transparent;
+      container-type: scroll-state;
       padding-right: 4px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
+      display: block;
+    }
+    .ai-sections.is-scrolling,
+    .ai-sections:focus-visible {
+      scrollbar-color: var(--kb-scroll-thumb) var(--kb-scroll-track);
+    }
+    @media (prefers-contrast: more) {
+      .ai-sections {
+        scrollbar-color: var(--kb-scroll-thumb) var(--kb-scroll-track);
+      }
+    }
+    @supports not (scrollbar-color: auto) {
+      .ai-sections {
+        scrollbar-width: auto;
+      }
+      .ai-sections::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      .ai-sections::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .ai-sections::-webkit-scrollbar-thumb {
+        background: transparent;
+        border-radius: 999px;
+      }
+      .ai-sections.is-scrolling::-webkit-scrollbar-thumb,
+      .ai-sections:focus-visible::-webkit-scrollbar-thumb {
+        background: var(--kb-scroll-thumb);
+      }
+      @media (prefers-contrast: more) {
+        .ai-sections::-webkit-scrollbar-thumb {
+          background: var(--kb-scroll-thumb);
+        }
+        .ai-sections::-webkit-scrollbar-track {
+          background: var(--kb-scroll-track);
+        }
+      }
+    }
+    .ai-sections::before,
+    .ai-sections::after {
+      content: "";
+      display: block;
+      position: sticky;
+      block-size: 12px;
+      z-index: 1;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+    .ai-sections::before {
+      inset-block-start: 0;
+      margin-block-end: -12px;
+      background: radial-gradient(farthest-side at 50% 0, var(--kb-scroll-shadow), transparent);
+    }
+    .ai-sections::after {
+      inset-block-end: 0;
+      margin-block-start: -12px;
+      background: radial-gradient(farthest-side at 50% 100%, var(--kb-scroll-shadow), transparent);
+    }
+    @container scroll-state(scrollable: block-start) {
+      .ai-sections::before { opacity: 1; }
+    }
+    @container scroll-state(scrollable: block-end) {
+      .ai-sections::after { opacity: 1; }
+    }
+    @keyframes kb-show-scroll-shadow {
+      to { opacity: 1; }
+    }
+    @supports not (container-type: scroll-state) {
+      .ai-sections::before,
+      .ai-sections::after {
+        animation: kb-show-scroll-shadow linear both;
+        animation-timeline: scroll();
+      }
+      .ai-sections::before {
+        animation-range: 0 24px;
+      }
+      .ai-sections::after {
+        animation-direction: reverse;
+        animation-range: calc(100% - 24px) 100%;
+      }
+    }
+    @supports not ((container-type: scroll-state) or (animation-timeline: scroll())) {
+      .ai-sections {
+        background:
+          linear-gradient(var(--kb-surface) 30%, transparent) top / 100% 24px no-repeat local,
+          linear-gradient(transparent, var(--kb-surface) 70%) bottom / 100% 24px no-repeat local,
+          radial-gradient(farthest-side at 50% 0, var(--kb-scroll-shadow), transparent) top / 100% 10px no-repeat,
+          radial-gradient(farthest-side at 50% 100%, var(--kb-scroll-shadow), transparent) bottom / 100% 10px no-repeat,
+          var(--kb-surface);
+      }
     }
     .ai-sections:focus-visible {
       outline: 2px solid var(--kb-brand);
@@ -694,6 +800,9 @@
     .ai-sec-block {
       display: grid;
       gap: 5px;
+    }
+    .ai-sec-block + .ai-sec-block {
+      margin-top: 10px;
     }
     .ai-sec-title {
       font-size: 12px;
@@ -1346,6 +1455,7 @@
       .hero-ai-slot { position: static; }
       .hero-ai-card { position: static; max-height: none; overflow: visible; }
       .ai-sections { overflow: visible; }
+      .ai-sections::before, .ai-sections::after { display: none; }
     }
   </style>
 </head>
@@ -3085,6 +3195,24 @@
         uiState.searchQuery = e.target.value;
         renderCaseAccordion(normalizeReport(currentData));
       });
+
+      const aiSectionsEl = document.getElementById("ai-summary-sections");
+      if (aiSectionsEl) {
+        let aiScrollTimer = null;
+        const showAiScrollbarBriefly = () => {
+          if (aiSectionsEl.scrollHeight <= aiSectionsEl.clientHeight + 1) {
+            aiSectionsEl.classList.remove("is-scrolling");
+            return;
+          }
+          aiSectionsEl.classList.add("is-scrolling");
+          clearTimeout(aiScrollTimer);
+          aiScrollTimer = setTimeout(() => {
+            aiSectionsEl.classList.remove("is-scrolling");
+          }, 900);
+        };
+        aiSectionsEl.addEventListener("scroll", showAiScrollbarBriefly, { passive: true });
+        aiSectionsEl.addEventListener("wheel", showAiScrollbarBriefly, { passive: true });
+      }
 
       document.getElementById("btn-print").addEventListener("click", () => window.print());
       document.getElementById("btn-export-json").addEventListener("click", () => {
