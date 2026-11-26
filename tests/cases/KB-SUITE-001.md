@@ -498,3 +498,4 @@ KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js s
 ## 5. 执行与产物规范
 - 每次按本测试集执行时，在 `.runtime/requests/<中文请求概要>/<RUN_ID>/`（或对应长期任务目录）记录实际环境、`threadId`、`runId` 与实测结果，不直接修改本测试集文件写入单次结果。
 - 每次执行结束后（无论仅执行 `1` 个、部分组合还是全量 `10` 个 Case），可将脱敏后的运行结果整理为 `report-data.json`（格式见 [kb-suite-001-report-sample.json](../data/kb-suite-001-report-sample.json)），调用 `python3 tests/scripts/render_suite_report.py --data <report-data.json> --out <RUN_DIR>/artifacts/report.html` 注入固定面板模板 [kb-suite-001-report.html](../templates/kb-suite-001-report.html)（支持多次 `--data` 合并展示；未执行 Case 自动显示为「未执行」，不拉低本次通过率）。
+- Agent 执行本测试集与生成外发 HTML 报告可直接调用 [kb-suite-runner](../../.agents/skills/kb-suite-runner/SKILL.md) 技能，配合 `.agents/skills/kb-suite-runner/scripts/suite_helper.py` 完成 Run 目录初始化、三道外发脱敏门禁校验与 HTML 报告渲染。

@@ -50,6 +50,7 @@ DBX 查询的环境映射由用户确认：
 - 本地环境：macOS；Python 使用 `python3`。
 - 工作区初始化与 Run 创建不依赖第三方包，见 README.md。
 - KuaiBuddy 多环境登录与对话 CLI、Run 模板见 [kb-test-execution](../.agents/skills/kb-test-execution/SKILL.md)。其他业务自动化框架按任务选用。
+- 执行通用回归测试集 `KB-SUITE-001`（单用例、局部组合或全量 `CASE-01`～`CASE-10`）及门禁渲染 HTML 报告见 [kb-suite-runner](../.agents/skills/kb-suite-runner/SKILL.md)。
 - 全局技能或连接工具按本机实际可用性选用，不视为仓库内置能力；缺少工具时明确缺口。
 - 禅道使用[项目内 zentao-qa 技能](../.agents/skills/zentao-qa/SKILL.md)（从本机技能复制，仅依赖 Python 3.9+ 标准库）；变量、加载约定及本地配置／账本路径见 [README](../README.md#禅道配置)。共享资料不复制个人 .env 内容，当前未验证连接及权限。
 - 浏览器 UI 测试需用户主动提出；不得因任务涉及页面就自行启动。
