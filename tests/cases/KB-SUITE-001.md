@@ -37,31 +37,32 @@ KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js s
 
 ### 3.1 能力覆盖总览
 
-| 能力标签 | 能力说明 | 已覆盖用例 | 覆盖状态 |
-| :--- | :--- | :--- | :--- |
-| `#prompt-cache` | 跨轮与轮内多步 Prompt 前缀缓存命中率 | `CASE-01` | ✅ 已覆盖 |
-| `#skill-load` | `/技能名` 触发与 Skill 说明动态加载 | `CASE-01` | ✅ 已覆盖 |
-| `#tool-execute` | 命令行/内置工具调用及多步循环（Agentic Loop） | `CASE-01` | ✅ 已覆盖 |
-| `#multi-turn-context` | 多轮上下文记忆、指代消解与跨轮数据融合 | `CASE-01` | ✅ 已覆盖 |
-| `#no-redundant-tool` | 历史已有结果时直接推理、不重复调工具 | `CASE-01` | ✅ 已覆盖 |
-| `#sse-stream-followup` | 思考链/正文流式分离与 Followup 追问生成 | `CASE-01` | ✅ 已覆盖 |
-| `#long-memory` | 跨会话长期记忆写入与召回 | `CASE-03` | ✅ 已覆盖 |
-| `#mcp-connector` | 个人 MCP 连接器安全拦截、发现授权、工具调用与停用闭环（`mcp-connector/*` + 运行时挂载） | `CASE-05` | ✅ 已覆盖 |
-| `#multimodal-file` | 图片、文档等附件入库交付与视觉识图解析（`save_to_library` / `save_image_to_library` / `analyze_image`） | `CASE-04` | ✅ 已覆盖 |
-| `#write-confirm` | 写操作闭环、后端权限/非法目标拦截（如越权或不存在 ID 防护） | `CASE-03` | ✅ 已覆盖 |
-| `#error-fallback` | 工具报错、超时、无效输入等异常兜底与恢复 | `CASE-03` | ✅ 已覆盖 |
-| `#context-compaction` | 达到阈值触发上下文压缩、关键信息保真及压缩后缓存重建 | `CASE-02` | ✅ 已覆盖 |
-| `#large-file-read` | 大体积工具输出 / 大文件读取（受 `read-file-max-chars` 约束） | `CASE-02` | ✅ 已覆盖 |
-| `#agent-switch` | 子 Agent 派发协作（`agent_spawn`）与结果汇总 | `CASE-04` | ✅ 已覆盖 |
-| `#scheduled-task` | 定时任务全生命周期管理（7 个工具）、XXL-JOB 触发执行及定时会话隔离 | `CASE-06` | ✅ 已覆盖 |
-| `#fs-code-tools` | 框架文件编辑与多维检索工具链（`write_file` / `edit_file` / `list_files` / `glob_files` / `grep_files`） | `CASE-07` | ✅ 已覆盖 |
-| `#web-fetch` | 公网网页抓取（`web_fetch`）及默认禁用 `web_search` 隔离验证 | `CASE-07` | ✅ 已覆盖 |
-| `#todo-plan` | 多步任务结构化待办清单维护（`todo_write`） | `CASE-07` | ✅ 已覆盖 |
-| `#tool-result-eviction` | 大体积工具输出自动卸载预览与命令行超时预算前置拦截（`requireShellBudget`） | `CASE-07` | ✅ 已覆盖 |
-| `#run-control` | SSE 断连不断执行（`/run/active` + `/run/observe` 全量重放续接）、同会话并发 `4006` 拦截、`/run/cancel` 真实中断（无后台写入泄漏、防会话锁死） | `CASE-08` | ✅ 已覆盖 |
-| `#points-billing` | 积分账户余额扣减、SSE `usage`、轮次消费状态（`SUCCEEDED`/`CANCELLED`）、逐笔明细幂等与并发被拒零计费四方对账 | `CASE-08` | ✅ 已覆盖 |
-| `#user-skill-crud` | 个人 Skill 包校验与全局重名拦截（`4102`/`4104`）、对话创建与内置技能隔离（`save_skill` / `query_skill`）、跨会话静默加载（`<name>_import`）、同名覆盖、ZIP 导出与启停删除闭环 | `CASE-09` | ✅ 已覆盖 |
-| `#image-gen` | AI 文生图（`text_to_image`）、链式图生图（`image_to_image`）、自动积分结算与永久入库（免调 `save_image_to_library`）、任务附件发现（`list_attachments`）及文件库／COS 物理删除（删后 `404`）闭环 | `CASE-10` | ✅ 已覆盖 |
+| 所属能力域 | 能力标签 | 能力简称 | 能力说明 | 已覆盖用例 | 覆盖状态 |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| 核心对话与缓存引擎（对话与缓存） | `#prompt-cache` | 前缀缓存命中率 | 跨轮与轮内多步 Prompt 前缀缓存命中率 | `CASE-01` | ✅ 已覆盖 |
+| 核心对话与缓存引擎（对话与缓存） | `#skill-load` | Skill 动态加载 | `/技能名` 触发与 Skill 说明动态加载 | `CASE-01` | ✅ 已覆盖 |
+| 核心对话与缓存引擎（对话与缓存） | `#tool-execute` | 多步工具循环 | 命令行/内置工具调用及多步循环（Agentic Loop） | `CASE-01` | ✅ 已覆盖 |
+| 核心对话与缓存引擎（对话与缓存） | `#multi-turn-context` | 多轮上下文记忆 | 多轮上下文记忆、指代消解与跨轮数据融合 | `CASE-01` | ✅ 已覆盖 |
+| 核心对话与缓存引擎（对话与缓存） | `#no-redundant-tool` | 防重复调工具 | 历史已有结果时直接推理、不重复调工具 | `CASE-01` | ✅ 已覆盖 |
+| 核心对话与缓存引擎（对话与缓存） | `#sse-stream-followup` | 流式分离与追问 | 思考链/正文流式分离与 Followup 追问生成 | `CASE-01` | ✅ 已覆盖 |
+| 长上下文与记忆底座（记忆与压缩） | `#context-compaction` | 上下文压缩保真 | 达到阈值触发上下文压缩、关键信息保真及压缩后缓存重建 | `CASE-02` | ✅ 已覆盖 |
+| 长上下文与记忆底座（记忆与压缩） | `#large-file-read` | 大文件分段读取 | 大体积工具输出 / 大文件读取（受 `read-file-max-chars` 约束） | `CASE-02` | ✅ 已覆盖 |
+| 长上下文与记忆底座（记忆与压缩） | `#long-memory` | 跨会话长期记忆 | 跨会话长期记忆写入与召回 | `CASE-03` | ✅ 已覆盖 |
+| 运行治理与积分安全（治理与积分） | `#write-confirm` | 写闭环与越权拦截 | 写操作闭环、后端权限/非法目标拦截（如越权或不存在 ID 防护） | `CASE-03` | ✅ 已覆盖 |
+| 运行治理与积分安全（治理与积分） | `#error-fallback` | 工具异常诚实兜底 | 工具报错、超时、无效输入等异常兜底与恢复 | `CASE-03` | ✅ 已覆盖 |
+| 运行治理与积分安全（治理与积分） | `#run-control` | 断连/并发/真中断 | SSE 断连不断执行（`/run/active` + `/run/observe` 全量重放续接）、同会话并发 `4006` 拦截、`/run/cancel` 真实中断（无后台写入泄漏、防会话锁死） | `CASE-08` | ✅ 已覆盖 |
+| 运行治理与积分安全（治理与积分） | `#points-billing` | 积分四方精确对账 | 积分账户余额扣减、SSE `usage`、轮次消费状态（`SUCCEEDED`/`CANCELLED`）、逐笔明细幂等与并发被拒零计费四方对账 | `CASE-08` | ✅ 已覆盖 |
+| 沙箱工程与联网工具（沙箱与联网） | `#fs-code-tools` | 文件编辑检索工具链 | 框架文件编辑与多维检索工具链（`write_file` / `edit_file` / `list_files` / `glob_files` / `grep_files`） | `CASE-07` | ✅ 已覆盖 |
+| 沙箱工程与联网工具（沙箱与联网） | `#web-fetch` | 公网抓取与搜索隔离 | 公网网页抓取（`web_fetch`）及默认禁用 `web_search` 隔离验证 | `CASE-07` | ✅ 已覆盖 |
+| 沙箱工程与联网工具（沙箱与联网） | `#todo-plan` | 结构化待办维护 | 多步任务结构化待办清单维护（`todo_write`） | `CASE-07` | ✅ 已覆盖 |
+| 沙箱工程与联网工具（沙箱与联网） | `#tool-result-eviction` | 超长卸载与超时拦截 | 大体积工具输出自动卸载预览与命令行超时预算前置拦截（`requireShellBudget`） | `CASE-07` | ✅ 已覆盖 |
+| 多模态与自动化执行（多模态与定时） | `#multimodal-file` | 产物入库与识图解析 | 图片、文档等工作区产物持久化入库交付与视觉识图解析（`save_to_library` / `analyze_image`） | `CASE-04` | ✅ 已覆盖 |
+| 多模态与自动化执行（多模态与定时） | `#scheduled-task` | 定时任务与触发隔离 | 定时任务全生命周期管理（7 个工具）、XXL-JOB 触发执行及定时会话隔离 | `CASE-06` | ✅ 已覆盖 |
+| 多模态与自动化执行（多模态与定时） | `#image-gen` | 文/图生图与 COS 闭环 | AI 文生图（`text_to_image`）、链式图生图（`image_to_image`）、自动积分结算与永久入库（免调 `save_image_to_library`）、任务附件发现（`list_attachments`）及文件库／COS 物理删除（删后 `404`）闭环 | `CASE-10` | ✅ 已覆盖 |
+| 开放连接与个人资产（MCP与个人Skill） | `#mcp-connector` | 个人 MCP 全生命周期 | 个人 MCP 连接器安全拦截、发现授权、工具调用与停用闭环（`mcp-connector/*` + 运行时挂载） | `CASE-05` | ✅ 已覆盖 |
+| 开放连接与个人资产（MCP与个人Skill） | `#user-skill-crud` | 个人 Skill 增删启停隔离 | 个人 Skill 包校验与全局重名拦截（`4102`/`4104`）、对话创建与内置技能隔离（`save_skill` / `query_skill`）、跨会话静默加载（`<name>_import`）、同名覆盖、ZIP 导出与启停删除闭环 | `CASE-09` | ✅ 已覆盖 |
+
+*说明：3.1 与 3.2 表格是 `KB-SUITE-001` 能力域、标签与用例清单的唯一事实源，`render_suite_report.py` 渲染与校验报告时自动解析本文档；增删改用例或标签仅需维护本文档，无需修改 HTML 模板、脚本或 Skill。（原 `#agent-switch` 子代理能力已取消，不再纳入核心覆盖。）*
 
 ### 3.2 测试用例索引
 
@@ -70,7 +71,7 @@ KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js s
 | [CASE-01](#case-01skill-加载与多轮工具调用-prompt-缓存命中率验证) | Skill 加载与多轮工具调用 Prompt 缓存命中率验证 | `#prompt-cache` `#skill-load` `#tool-execute` `#multi-turn-context` `#no-redundant-tool` `#sse-stream-followup` | P1 | 已验证 |
 | [CASE-02](#case-02上下文压缩触发与关键信息保真验证) | 上下文压缩触发与关键信息保真验证 | `#context-compaction` `#large-file-read` | P1 | 已验证 |
 | [CASE-03](#case-03跨会话长期记忆闭环与异常越权兜底验证) | 跨会话长期记忆闭环与异常越权兜底验证 | `#long-memory` `#error-fallback` `#write-confirm` | P1 | 已验证 |
-| [CASE-04](#case-04子-agent-派发识图与文件产物交付验证) | 子 Agent 派发、识图与文件产物交付验证 | `#agent-switch` `#multimodal-file` | P1 | 已验证 |
+| [CASE-04](#case-04多模态文件产物交付与视觉识图解析验证) | 多模态文件产物交付与视觉识图解析验证 | `#multimodal-file` | P1 | 待复测 |
 | [CASE-05](#case-05个人-mcp-连接器全生命周期与安全边界验证) | 个人 MCP 连接器全生命周期与安全边界验证 | `#mcp-connector` | P1 | 已验证 |
 | [CASE-06](#case-06定时任务全生命周期管理与触发隔离验证) | 定时任务全生命周期管理与触发隔离验证 | `#scheduled-task` | P1 | 已验证 |
 | [CASE-07](#case-07框架文件检索任务规划联网抓取与大输出卸载验证) | 框架文件检索、任务规划、联网抓取与大输出卸载验证 | `#fs-code-tools` `#web-fetch` `#todo-plan` `#tool-result-eviction` | P1 | 已验证 |
@@ -220,34 +221,35 @@ KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js s
 
 ---
 
-### CASE-04：子 Agent 派发、识图与文件产物交付验证
-- **覆盖标签**：`#agent-switch` `#multimodal-file`
-- **测试目标**：验证主 Agent 通过 `agent_spawn` 派发 `general-purpose` 子 Agent 在工作区生成图片与 Markdown 产物、主 Agent 调用 `save_image_to_library` / `save_to_library` 持久化交付真实 `accessUrl`，以及调用 `analyze_image` 识别入库图片内容的端到端闭环。
-- **前置条件**：
-  - 全环境内置 `agent_spawn`、`execute`、`save_image_to_library`、`save_to_library`、`analyze_image` 工具，**无外部账号/MCP 依赖**。
-  - 注意：`save_to_library` / `save_image_to_library` 仅允许工作区相对路径（如 `artifacts/...`），禁止 `/tmp` 等工作区外路径；`analyze_image` 仅接受入库后的有效 `http(s)` URL。
+### CASE-04：多模态文件产物交付与视觉识图解析验证
+- **覆盖标签**：`#multimodal-file`
+- **测试目标**：验证主 Agent 直接在工作区生成高对比度 PNG 图片与 Markdown 文档、通过 `save_to_library` 持久化交付真实 `accessUrl`（无沙箱内部路径泄漏），以及调用 `analyze_image` 识别图片数字内容的端到端闭环（不依赖已取消的子代理能力）。
+- **前置条件与工具契约**：
+  - 全环境内置 `execute`、`write_file`、`save_to_library`、`analyze_image` 工具，**无外部账号/MCP 依赖**。
+  - **工具参数契约**：`save_to_library` 接收工作区相对路径（如 `artifacts/case04_vision.png`、`artifacts/case04_report.md`，禁止 `/tmp` 等工作区外路径）；`save_image_to_library` 仅接收 `http/https` 图片 URL 引用、不接收本地相对路径；`analyze_image` 仅接受入库后的有效 `http(s)` URL。
+  - *可选清理*：如需保持测试账号文件库干净，第 2 轮完成后可按第 1 轮返回的 `attachmentId` 调用 `POST /web/agent/api/v1/library/delete` 清理两项测试产物。
 
 | 轮次 | 场景类型 | 固定输入提示词（Exact Prompt，执行时不可自由改写） | 预期交互行为 | 预期观测指标（`events.json` + Langfuse `LF_ENV`） |
 | :--- | :--- | :--- | :--- | :--- |
-| **第 1 轮** | 子 Agent 派发 + 生成图/报告 + 入库交付 | `请使用 agent_spawn 派发一个子 Agent（general-purpose），让它在当前工作区完成两件事：1）在 artifacts/case04_vision.png 生成一张白底黑字的高对比度 PNG 图片，图片中央清晰写出大号数字“8848”（字号占画面一半以上，可用 PIL 或纯 Python 生成）；2）在 artifacts/case04_report.md 写入一段 50 字以内的测试说明。子 Agent 完成后，由你调用 save_image_to_library 保存 artifacts/case04_vision.png，调用 save_to_library 保存 artifacts/case04_report.md，并返回两个产物的真实 accessUrl。` | 派发 `general-purpose` 子 Agent 生成两个工作区文件并汇总结果，主 Agent 调用 `save_image_to_library` 与 `save_to_library` 入库，返回两个有效 `accessUrl` | 1. `events.json` / Langfuse 可见 `agent_spawn` 调用；<br>2. 可见 `save_image_to_library` 与 `save_to_library` 成功返回 `attachmentId` 与真实 `http(s)` `accessUrl` |
-| **第 2 轮** | 视觉识图模型解析验证 | `请调用 analyze_image 工具查看上一轮 save_image_to_library 返回的图片 URL，告诉我图片中央显示的数字是什么。` | 调用 `analyze_image` 读取入库图片 URL 并准确识别出数字 `8848` | 1. Langfuse 可见 `analyze_image` 工具调用，入参 `image_refs` 为第 1 轮返回的真实图片 URL；<br>2. 最终回复准确包含 `8848` |
+| **第 1 轮** | 生成图文产物 + `save_to_library` 持久化交付 | `请在当前工作区完成两件事（直接由你执行，不要调用子 Agent）：1）在 artifacts/case04_vision.png 生成一张白底黑字的高对比度宽幅 PNG 图片（建议尺寸约 1200x600，可用 PIL 或纯 Python 生成），图片中央清晰写出大号数字“8848”；2）在 artifacts/case04_report.md 写入一段 50 字以内的测试说明。完成后，分别调用 save_to_library 保存 artifacts/case04_vision.png 与 artifacts/case04_report.md 到用户文件库，并返回两个产物的 attachmentId 与真实 accessUrl。` | 主 Agent 直接生成两个工作区文件并两次调用 `save_to_library` 入库，返回两份真实可访问的 `accessUrl` | 1. Langfuse 未触发 `agent_spawn`；<br>2. 可见 `save_to_library` 成功保存 PNG 与 Markdown，返回两个真实 `attachmentId` 与 `http(s)` `accessUrl` |
+| **第 2 轮** | 视觉识图模型解析验证 | `请调用 analyze_image 工具查看上一轮 save_to_library 返回的图片 accessUrl，告诉我图片中央显示的数字是什么。` | 调用 `analyze_image` 读取入库图片 URL 并准确识别出数字 `8848` | 1. Langfuse 可见 `analyze_image` 工具调用，入参 `image_refs` 为第 1 轮返回的真实图片 URL；<br>2. 最终回复准确包含 `8848` |
 
 - **跨环境执行命令模板**（将 `<ENV_FILE>` 与 `<OUT_DIR>` 替换为实际值）：
   ```bash
   # 1. 第 1 轮（新建会话，提取 THREAD_ID）
   KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js ask \
-    "请使用 agent_spawn 派发一个子 Agent（general-purpose），让它在当前工作区完成两件事：1）在 artifacts/case04_vision.png 生成一张白底黑字的高对比度 PNG 图片，图片中央清晰写出大号数字“8848”（字号占画面一半以上，可用 PIL 或纯 Python 生成）；2）在 artifacts/case04_report.md 写入一段 50 字以内的测试说明。子 Agent 完成后，由你调用 save_image_to_library 保存 artifacts/case04_vision.png，调用 save_to_library 保存 artifacts/case04_report.md，并返回两个产物的真实 accessUrl。" \
+    "请在当前工作区完成两件事（直接由你执行，不要调用子 Agent）：1）在 artifacts/case04_vision.png 生成一张白底黑字的高对比度宽幅 PNG 图片（建议尺寸约 1200x600，可用 PIL 或纯 Python 生成），图片中央清晰写出大号数字“8848”；2）在 artifacts/case04_report.md 写入一段 50 字以内的测试说明。完成后，分别调用 save_to_library 保存 artifacts/case04_vision.png 与 artifacts/case04_report.md 到用户文件库，并返回两个产物的 attachmentId 与真实 accessUrl。" \
     --out "<OUT_DIR>/turn-1" --json
 
   # 2. 第 2 轮（复用 THREAD_ID，验证识图）
   KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js ask \
-    "请调用 analyze_image 工具查看上一轮 save_image_to_library 返回的图片 URL，告诉我图片中央显示的数字是什么。" \
+    "请调用 analyze_image 工具查看上一轮 save_to_library 返回的图片 accessUrl，告诉我图片中央显示的数字是什么。" \
     --session "$THREAD_ID" --out "<OUT_DIR>/turn-2" --json
   ```
 
 - **通过标准（双口径验收）**：
-  1. **子 Agent 协作生效**：第 1 轮成功触发 `agent_spawn`（`general-purpose`）并完成文件生成。
-  2. **产物入库交付**：`save_image_to_library` 与 `save_to_library` 均成功返回真实 `accessUrl`（未出现沙箱路径泄漏或虚构链接）。
+  1. **主 Agent 独立执行**：第 1 轮由主 Agent 直接完成文件生成且未调用 `agent_spawn`。
+  2. **产物入库交付**：两次 `save_to_library` 均成功返回 `attachmentId` 与真实 `accessUrl`（无沙箱内部路径泄漏或虚构链接）。
   3. **识图模型闭环**：第 2 轮实际调用 `analyze_image` 且准确识别出图片中的数字 `8848`。
 
 ---
@@ -497,5 +499,5 @@ KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js s
 
 ## 5. 执行与产物规范
 - 每次按本测试集执行时，在 `.runtime/requests/<中文请求概要>/<RUN_ID>/`（或对应长期任务目录）记录实际环境、`threadId`、`runId` 与实测结果，不直接修改本测试集文件写入单次结果。
-- 每次执行结束后（无论仅执行 `1` 个、部分组合还是全量 `10` 个 Case），可将脱敏后的运行结果整理为 `report-data.json`（格式见 [kb-suite-001-report-sample.json](../data/kb-suite-001-report-sample.json)），调用 `python3 tests/scripts/render_suite_report.py --data <report-data.json> --out <RUN_DIR>/artifacts/report.html` 注入固定面板模板 [kb-suite-001-report.html](../templates/kb-suite-001-report.html)（支持多次 `--data` 合并展示；未执行 Case 自动显示为「未执行」，不拉低本次通过率）。
+- 每次执行结束后（无论仅执行单用例、局部组合还是全量用例），可将脱敏后的运行结果整理为 `report-data.json`（格式见 [kb-suite-001-report-sample.json](../data/kb-suite-001-report-sample.json)），调用 `python3 .agents/skills/kb-suite-runner/scripts/render_suite_report.py --data <report-data.json> --out <RUN_DIR>/artifacts/report.html` 注入固定面板模板 [kb-suite-001-report.html](../../.agents/skills/kb-suite-runner/assets/kb-suite-001-report.html)（支持多次 `--data` 合并展示；未执行 Case 自动显示为「未执行」，不拉低本次通过率）。
 - Agent 执行本测试集与生成外发 HTML 报告可直接调用 [kb-suite-runner](../../.agents/skills/kb-suite-runner/SKILL.md) 技能，配合 `.agents/skills/kb-suite-runner/scripts/suite_helper.py` 完成 Run 目录初始化、三道外发脱敏门禁校验与 HTML 报告渲染。

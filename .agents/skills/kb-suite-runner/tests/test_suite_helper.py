@@ -13,6 +13,7 @@ import unittest
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 SCRIPT_PATH = REPO_ROOT / ".agents" / "skills" / "kb-suite-runner" / "scripts" / "suite_helper.py"
+RENDER_SCRIPT_PATH = REPO_ROOT / ".agents" / "skills" / "kb-suite-runner" / "scripts" / "render_suite_report.py"
 SAMPLE_JSON = REPO_ROOT / "tests" / "data" / "kb-suite-001-report-sample.json"
 
 
@@ -256,6 +257,109 @@ class SuiteHelperTests(unittest.TestCase):
             p_ok.write_text(json.dumps(d_ok, ensure_ascii=False), encoding="utf-8")
             res_ok = run_cli("check-and-render", "--check-only", "--data", str(p_ok))
             self.assertEqual(res_ok.returncode, 0, res_ok.stderr)
+
+    def test_dynamic_markdown_suite_add_case11_and_new_domain(self) -> None:
+        base_suite = (REPO_ROOT / "tests" / "cases" / "KB-SUITE-001.md").read_text(encoding="utf-8")
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            mod_md = base_suite.replace(
+                "| 开放连接与个人资产（MCP与个人Skill） | `#user-skill-crud`",
+                "| 语音交互与实时通话（实时语音） | `#voice-call` | 实时语音通话 | 实时语音连麦与打断恢复 | `CASE-11` | ✅ 已覆盖 |\n| 开放连接与个人资产（MCP与个人Skill） | `#user-skill-crud`",
+                1,
+            ).replace(
+                "| *后续扩展*",
+                "| [CASE-11](#case-11-voice) | 实时语音连麦与打断恢复验证 | `#voice-call` | P1 | 已验证 |\n| *后续扩展*",
+                1,
+            ).replace(
+                "## 5. 执行与产物规范",
+                (
+                    "### CASE-11：实时语音连麦与打断恢复验证\n"
+                    "- **测试目标**：验证实时语音通道创建与语音打断收敛。\n\n"
+                    "```bash\n"
+                    "KB_ENV_FILE=.env.<ENV> node .agents/skills/kb-test-execution/scripts/kb_e2e.js ask \"发起测试语音\" --out \"<OUT_DIR>/turn-1\" --json\n"
+                    "```\n\n"
+                    "---\n\n"
+                    "## 5. 执行与产物规范"
+                ),
+                1,
+            )
+            suite_file = root / "KB-SUITE-CUSTOM.md"
+            suite_file.write_text(mod_md, encoding="utf-8")
+
+            d11 = make_valid_payload("RUN-VOICE-11", "CASE-11")
+            data_file = root / "run11.json"
+            data_file.write_text(json.dumps(d11, ensure_ascii=False), encoding="utf-8")
+            out_html = root / "report11.html"
+
+            res = run_cli(
+                "check-and-render",
+                "--suite",
+                str(suite_file),
+                "--data",
+                str(data_file),
+                "--out",
+                str(out_html),
+            )
+            self.assertEqual(res.returncode, 0, res.stderr)
+            self.assertTrue(out_html.is_file())
+
+            html_txt = out_html.read_text(encoding="utf-8")
+            cat_m = re.search(r'<script\s+id="kb-suite-catalog"\s+type="application/json"\s*>(.*?)</script>', html_txt, re.S)
+            self.assertIsNotNone(cat_m)
+            cat = json.loads(cat_m.group(1))
+            self.assertEqual(len(cat["cases"]), 11)
+            self.assertEqual(cat["cases"][-1]["id"], "CASE-11")
+            all_tags = [t["tag"] for d in cat["domains"] for t in d["tags"]]
+            self.assertEqual(len(all_tags), 23)
+            self.assertIn("voice-call", all_tags)
+
+    def test_render_script_default_paths_in_skill(self) -> None:
+        import importlib.util
+
+        spec = importlib.util.spec_from_file_location("kb_render_mod_check", str(RENDER_SCRIPT_PATH))
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+
+        expected_tpl = REPO_ROOT / ".agents" / "skills" / "kb-suite-runner" / "assets" / "kb-suite-001-report.html"
+        self.assertEqual(mod.ROOT, REPO_ROOT)
+        self.assertEqual(mod.DEFAULT_TEMPLATE, expected_tpl)
+        self.assertTrue(mod.DEFAULT_TEMPLATE.is_file())
+        self.assertEqual(mod.DEFAULT_SUITE, REPO_ROOT / "tests" / "cases" / "KB-SUITE-001.md")
+
+        res = subprocess.run(
+            [sys.executable, str(RENDER_SCRIPT_PATH), "--check-suite"],
+            cwd=str(REPO_ROOT),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(res.returncode, 0, res.stderr)
+        self.assertIn("测试集自洽校验通过", res.stdout)
+
+    def test_check_suite_detects_table_mismatch(self) -> None:
+        base_suite = (REPO_ROOT / "tests" / "cases" / "KB-SUITE-001.md").read_text(encoding="utf-8")
+        with tempfile.TemporaryDirectory() as tmp:
+            bad_md = base_suite.replace("`#image-gen` | P1", "`#not-defined-tag` | P1", 1)
+            bad_file = Path(tmp) / "BAD-SUITE.md"
+            bad_file.write_text(bad_md, encoding="utf-8")
+
+            res = subprocess.run(
+                [
+                    sys.executable,
+                    str(RENDER_SCRIPT_PATH),
+                    "--check-suite",
+                    "--suite",
+                    str(bad_file),
+                ],
+                cwd=str(REPO_ROOT),
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertNotEqual(res.returncode, 0)
+            self.assertIn("交叉校验失败", res.stderr)
 
 
 if __name__ == "__main__":

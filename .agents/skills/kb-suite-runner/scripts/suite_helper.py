@@ -18,6 +18,7 @@ import secrets
 import subprocess
 import sys
 
+SCRIPT_DIR = Path(__file__).resolve().parent
 DEFAULT_ROOT = Path(__file__).resolve().parents[4]
 
 SUMMARY_ALLOWED_RE = re.compile(r"^[\u4e00-\u9fffA-Za-z0-9-]{1,40}$")
@@ -53,11 +54,9 @@ SECRET_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
 )
 
 
-def load_render_module(root: Path):
-    """动态加载工作区唯一的 tests/scripts/render_suite_report.py，不复制逻辑。"""
-    candidate = root / "tests" / "scripts" / "render_suite_report.py"
-    if not candidate.is_file():
-        candidate = DEFAULT_ROOT / "tests" / "scripts" / "render_suite_report.py"
+def load_render_module(root: Path | None = None):
+    """加载同目录 render_suite_report.py，不复制逻辑。"""
+    candidate = SCRIPT_DIR / "render_suite_report.py"
     if not candidate.is_file():
         raise FileNotFoundError(f"找不到报告渲染脚本：{candidate}")
     spec = importlib.util.spec_from_file_location("kb_render_suite_report", str(candidate))
@@ -235,13 +234,13 @@ def cmd_init_run(args: argparse.Namespace) -> int:
     return 0
 
 
-def run_quality_gates(doc: dict, source_label: str, render_mod) -> list[str]:
+def run_quality_gates(doc: dict, source_label: str, render_mod, catalog: dict | None = None) -> list[str]:
     """对单份报告 JSON 执行三道门禁检查，返回问题描述列表（空列表表示通过）。"""
     errors: list[str] = []
 
     # Gate 1：Schema 结构校验（复用 render_suite_report.py）
     try:
-        render_mod.validate_payload(doc, source_label)
+        render_mod.validate_payload(doc, source_label, catalog=catalog)
     except render_mod.ValidationError as exc:
         errors.append(f"[Schema] {exc}")
         return errors
@@ -310,6 +309,13 @@ def cmd_check_and_render(args: argparse.Namespace) -> int:
         print(f"[suite_helper] 错误：{exc}", file=sys.stderr)
         return 2
 
+    suite_path = Path(args.suite) if args.suite else render_mod.DEFAULT_SUITE
+    try:
+        catalog = render_mod.parse_suite_catalog(suite_path)
+    except render_mod.ValidationError as exc:
+        print(f"[suite_helper] 测试集解析/校验失败：{exc}", file=sys.stderr)
+        return 1
+
     payloads: list[dict] = []
     all_errors: list[str] = []
 
@@ -323,7 +329,7 @@ def cmd_check_and_render(args: argparse.Namespace) -> int:
         except json.JSONDecodeError as exc:
             all_errors.append(f"[JSON解析][{path}] 第 {exc.lineno} 行解析失败：{exc.msg}")
             continue
-        errs = run_quality_gates(doc, str(path), render_mod)
+        errs = run_quality_gates(doc, str(path), render_mod, catalog=catalog)
         if errs:
             all_errors.extend(errs)
         else:
@@ -353,7 +359,7 @@ def cmd_check_and_render(args: argparse.Namespace) -> int:
 
     template_text = tpl_path.read_text(encoding="utf-8")
     try:
-        rendered_html = render_mod.render_html(template_text, merged)
+        rendered_html = render_mod.render_html(template_text, merged, catalog=catalog)
     except ValueError as exc:
         print(f"[suite_helper] 渲染失败：{exc}", file=sys.stderr)
         return 2
@@ -362,15 +368,22 @@ def cmd_check_and_render(args: argparse.Namespace) -> int:
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(rendered_html, encoding="utf-8")
 
-    # 回读落盘 HTML 并校验内嵌 JSON 完整性
+    # 回读落盘 HTML 并校验目录与报告数据双槽位 JSON 完整性
     written_text = out_path.read_text(encoding="utf-8")
+    cat_match = render_mod.CATALOG_SLOT_PATTERN.search(written_text)
+    if not cat_match:
+        print(f"[suite_helper] 错误：落盘回读未找到测试集目录槽位：{out_path}", file=sys.stderr)
+        return 2
     match = render_mod.SLOT_PATTERN.search(written_text)
     if not match:
         print(f"[suite_helper] 错误：落盘回读未找到报告数据槽位：{out_path}", file=sys.stderr)
         return 2
     try:
+        embedded_cat = json.loads(cat_match.group(2))
+        if not isinstance(embedded_cat, dict) or not isinstance(embedded_cat.get("cases"), list):
+            raise render_mod.ValidationError("内嵌目录缺少 cases 数组")
         embedded = json.loads(match.group(2))
-        render_mod.validate_payload(embedded, f"{out_path}#embedded")
+        render_mod.validate_payload(embedded, f"{out_path}#embedded", catalog=catalog)
     except (json.JSONDecodeError, render_mod.ValidationError) as exc:
         print(f"[suite_helper] 错误：落盘 HTML 内嵌 JSON 校验失败：{exc}", file=sys.stderr)
         return 1
@@ -399,6 +412,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_render = sub.add_parser("check-and-render", help="三道门禁校验并渲染/合并生成标准化 HTML 报告")
     p_render.add_argument("--data", action="append", required=True, help="report-data JSON 路径（可重复传入合并）")
+    p_render.add_argument("--suite", help="测试集 Markdown 真源路径覆盖（默认 tests/cases/KB-SUITE-001.md）")
     p_render.add_argument("--out", help="输出 HTML 路径（未设 --check-only 时必填）")
     p_render.add_argument("--template", help="HTML 模板路径覆盖")
     p_render.add_argument("--check-only", action="store_true", help="仅执行门禁校验，不写出 HTML 文件")

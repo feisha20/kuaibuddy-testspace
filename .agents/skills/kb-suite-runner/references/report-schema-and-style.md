@@ -1,6 +1,6 @@
 # KB-SUITE-001 报告数据结构与外发规范
 
-本规范约定 `report-data.json`（Schema `kb-suite-001-report.v1`）的数据结构、Nacos 环境配置采集口径、`aiSummary` 外发写作规范，以及多 Run 合并与三道门禁规则。固定模板见 [kb-suite-001-report.html](../../../../tests/templates/kb-suite-001-report.html)，底层渲染器见 [render_suite_report.py](../../../../tests/scripts/render_suite_report.py)，结构样例见 [kb-suite-001-report-sample.json](../../../../tests/data/kb-suite-001-report-sample.json)。
+本规范约定 `report-data.json`（Schema `kb-suite-001-report.v1`）的数据结构、Nacos 环境配置采集口径、`aiSummary` 外发写作规范，以及多 Run 合并与三道门禁规则。固定模板见 [kb-suite-001-report.html](../assets/kb-suite-001-report.html)，底层渲染器见 [render_suite_report.py](../scripts/render_suite_report.py)，结构样例见 [kb-suite-001-report-sample.json](../../../../tests/data/kb-suite-001-report-sample.json)。
 
 ## 1. JSON 顶层结构（`kb-suite-001-report.v1`）
 
@@ -17,7 +17,7 @@
 ```
 
 - `isPlaceholderDemo`：真实执行 Run **必须**置为 `false`（仅人工演示样例设 `true`）。
-- `cases`：**仅写入本次实际执行或受阻塞失败的用例**（ID 唯一且限定 `CASE-01`～`CASE-10`），未执行的用例由前端模板自动补齐为「未执行」，不拉低本次通过率。
+- `cases`：**仅写入本次实际执行或受阻塞失败的用例**（ID 唯一且须存在于 [KB-SUITE-001.md](../../../../tests/cases/KB-SUITE-001.md) 测试集目录中），未执行的用例由前端模板自动补齐为「未执行」，不拉低本次通过率。
 
 ### 1.1 `meta` 字段说明
 
@@ -39,7 +39,7 @@
 
 ### 1.2 `cases[*]` 字段说明
 
-- `id`：`"CASE-01"`～`"CASE-10"`。
+- `id`：属于 [KB-SUITE-001.md](../../../../tests/cases/KB-SUITE-001.md) 目录中已定义的 `CASE-xx` 编号（由 `render_suite_report.py` 在校验/渲染时自动从该 Markdown 解析校验，不写死上限）。
 - `status`：`"passed"` / `"failed"` / `"blocked"` / `"not_run"`。
   - **一致性约束**：`status == "passed"` 时，`steps[*].status` 不得包含 `failed` 或 `blocked`；`status == "not_run"` 时，`steps[*].status` 不得包含 `passed`/`failed`/`blocked`。
 - `summary`：单用例精炼实测结论（1～2 句，脱敏）。
@@ -118,9 +118,12 @@
 
 **全文件凭据红线**：`report-data.json` 任意字段中均不可包含 Bearer Token、JWT（`eyJ...`）、Langfuse 密钥（`sk-lf-`/`pk-lf-`）、明文 `accessToken`/`refreshToken`/`password`/`secretKey`/`apiKey`/`authorization` 值或未脱敏客户隐私数据。
 
-## 4. 多 Run 合并行为说明
+## 4. 单真源目录注入与多 Run 合并行为说明
 
-当向 `suite_helper.py check-and-render` 传入多个 `--data` 时，底层调用 [render_suite_report.py](../../../../tests/scripts/render_suite_report.py) 的 `merge_payloads` 执行：
+每次通过 `suite_helper.py check-and-render` 或 [render_suite_report.py](../scripts/render_suite_report.py) 渲染报告时：
+- 工具自动解析 `--suite`（默认 [KB-SUITE-001.md](../../../../tests/cases/KB-SUITE-001.md)）生成最新能力域、标签与用例目录，同时注入模板的 `<script id="kb-suite-catalog">` 槽位；可用 `--check-suite` 单独校验测试集 3.1/3.2/第 4 节自洽性，或用 `--preview-suite` 一键导出 0 已执行用例的交互式浏览 HTML，用 `--sync-template` 刷新模板内置兜底快照。
+
+当向 `suite_helper.py check-and-render` 传入多个 `--data` 时，底层调用 [render_suite_report.py](../scripts/render_suite_report.py) 的 `merge_payloads` 执行：
 1. 同一 `CASE-xx` 由**后传入的数据覆盖先传入的数据**，因此按从旧到新顺序传参即可保留最新复测结论。
 2. `durationMs` 与 `pointsConsumed` 自动累加；单次运行的 `pointsBefore`、`pointsAfter` 与单份 `aiSummary` 自动丢弃，改由前端 `buildAutoAiSummary()` 根据合并后的全集自动生成干净的 `核心结论 / 效能与资源 / 覆盖缺口` 摘要。
 3. `cleanupStatus` 自动取全部入参中的最差状态，防止“某轮清理失败被后续轮覆盖成通过”。

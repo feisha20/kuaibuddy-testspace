@@ -1,19 +1,21 @@
 ---
 name: kb-suite-runner
-description: 在 KuaiBuddy 测试、预生产或生产环境执行 KB-SUITE-001 回归测试集（单用例、局部组合或全量 CASE-01～CASE-10），联动 Langfuse/API/Nacos 采集多口径证据，并将结果校验渲染或合并为可离线分享的标准化 HTML 回归报告时使用。
+description: 在 KuaiBuddy 测试、预生产或生产环境执行 KB-SUITE-001 回归测试集（单用例、局部组合或全量回归），联动 Langfuse/API/Nacos 采集多口径证据，并将结果校验渲染或合并为可离线分享的标准化 HTML 回归报告时使用。
 ---
 
 # KuaiBuddy KB-SUITE-001 回归执行与报告生成
 
-本技能用于在受控授权前提下编排执行 KuaiBuddy 核心回归测试集 [KB-SUITE-001.md](../../../tests/cases/KB-SUITE-001.md)（`CASE-01`～`CASE-10`，覆盖 `6` 大能力域 × `23` 项能力标签），采集对话 SSE、接口、Nacos 配置及 Langfuse 观测证据，并严格通过门禁校验生成可离线分享的单文件交互式 HTML 回归报告。
+本技能用于在受控授权前提下编排执行 KuaiBuddy 核心回归测试集 [KB-SUITE-001.md](../../../tests/cases/KB-SUITE-001.md)，采集对话 SSE、接口、Nacos 配置及 Langfuse 观测证据，并严格通过门禁校验生成可离线分享的单文件交互式 HTML 回归报告。
+
+> **单真源约定**：[KB-SUITE-001.md](../../../tests/cases/KB-SUITE-001.md)（3.1、3.2 与第 4 节）是能力域、能力标签与用例清单的**唯一事实源**；[render_suite_report.py](scripts/render_suite_report.py) 校验和渲染时会自动解析该 Markdown 并注入 HTML 模板。后续增删改任何用例或标签，只需维护测试集 Markdown 本身，无需修改模板、脚本或本技能。
 
 ## 复用工作区资产（优先复用，不重复实现）
 
 | 资产 | 用途 | 路径 |
 |---|---|---|
-| 测试集定义 | `CASE-01`～`CASE-10` 固定提示词、接口契约与双/四方验收标准 | [KB-SUITE-001.md](../../../tests/cases/KB-SUITE-001.md) |
-| 固定报告模板 | 含能力图谱、环境配置 6 格、AI 总结与用例抽屉的单文件 HTML | [kb-suite-001-report.html](../../../tests/templates/kb-suite-001-report.html) |
-| 报告校验与渲染器 | JSON Schema 校验、多 Run 合并与模板安全注入 | [render_suite_report.py](../../../tests/scripts/render_suite_report.py) |
+| 测试集定义 | 用例目录、固定提示词、接口契约与双/四方验收标准（单真源） | [KB-SUITE-001.md](../../../tests/cases/KB-SUITE-001.md) |
+| 固定报告模板 | 含能力图谱、环境配置 6 格、AI 总结与用例抽屉的数据驱动单文件 HTML | [kb-suite-001-report.html](assets/kb-suite-001-report.html) |
+| 报告校验与渲染器 | Markdown 真源解析、JSON Schema 校验、多 Run 合并与双槽安全注入 | [render_suite_report.py](scripts/render_suite_report.py) |
 | 报告数据样例 | `kb-suite-001-report.v1` 四态结构参考（非实测结果） | [kb-suite-001-report-sample.json](../../../tests/data/kb-suite-001-report-sample.json) |
 | 多环境对话 CLI 与模板 | `kb_e2e.js` 登录/对话/回读与 `plan/execution/result` 模板 | [kb-test-execution](../kb-test-execution/SKILL.md) |
 | 观测脚本 | `langfuse_fetch.py`、`local_config.py`（v2 observations 直连拉取） | [kb-bug-analyse](../kb-bug-analyse/SKILL.md) |
@@ -33,7 +35,7 @@ description: 在 KuaiBuddy 测试、预生产或生产环境执行 KB-SUITE-001 
 
 ### 步骤 1：范围确认与环境预检
 
-1. 明确目标环境（`test` / `preprod` / `prod`）、本次执行的 Case 子集（支持单用例、局部组合或全量 10 项），以及是否复用长期 `TASK_ID`（默认单次请求不分配 `TASK_ID`）。
+1. 明确目标环境（`test` / `preprod` / `prod`）、本次执行的 Case 子集（支持单用例、局部组合或全量回归），以及是否复用长期 `TASK_ID`（默认单次请求不分配 `TASK_ID`）。执行前先读取 [KB-SUITE-001.md](../../../tests/cases/KB-SUITE-001.md) 中对应 `CASE-xx` 小节，确认最新提示词、前置门槛与验收口径。
 2. 执行一次登录刷新令牌缓存（禁止打印令牌原文）：
    ```bash
    KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js login --force --json
@@ -63,9 +65,9 @@ python3 .agents/skills/kb-suite-runner/scripts/suite_helper.py init-run \
 
 严格按照 [KB-SUITE-001.md](../../../tests/cases/KB-SUITE-001.md) 中的**固定输入提示词**与 [用例执行速查与避坑指南](references/case-execution-guide.md) 逐项执行：
 
-- **禁止修改固定契约**：各用例的 Exact Prompt、边界规格（如 `CASE-02` 中文+JSON 日志、`CASE-10` `K1`/`R_1_1`）及参数格式不得随意改写。
+- **禁止修改固定契约**：各用例的 Exact Prompt、边界规格（如特定样本格式或最小生图规格）及参数格式以 [KB-SUITE-001.md](../../../tests/cases/KB-SUITE-001.md) 为准，不得随意改写。
 - **静默工具必须查 Langfuse**：`load_skill_through_path` 等静默工具不透出 SSE（参见 `K-003` / `K-008`），须通过 `langfuse_fetch.py` 复用逻辑（`ProxyHandler({})` 直连、`fields=core,basic,usage,model,time`）在根 Span 带 `endTime` 收口后统计全部 `GENERATION` 与 `TOOL`。
-- **强自清理边界**：涉及写副作用的用例（`CASE-03 / CASE-05 / CASE-06 / CASE-07 / CASE-08 / CASE-09 / CASE-10`）必须在 `try ... finally` 中清理临时测试资产，并复核测试前既有基线数据完全无损。
+- **强自清理边界**：涉及写副作用的用例（如长期记忆、个人 MCP、定时任务、沙箱临时文件、运行态取消、个人 Skill、AI 生图等）必须在 `try ... finally` 中清理临时测试资产，并复核测试前既有基线数据完全无损。
 - **实时落盘动作**：每次真实执行、时间窗（含 `+08:00` 或 UTC 时区）与脱敏证据路径实时记录到 `<RUN_DIR>/execution.md`，不预填成功。
 
 ### 步骤 4：整理 `result.md` 与 `artifacts/report-data.json`

@@ -1534,7 +1534,7 @@
             <div class="ring-meta">
               <div class="ring-label">全集能力覆盖进度</div>
               <div class="ring-val tabular" id="ring-cov-val">—</div>
-              <div class="ring-sub tabular" id="ring-cov-sub">0 / 23 能力标签 · 0 / 10 用例</div>
+              <div class="ring-sub tabular" id="ring-cov-sub">—</div>
             </div>
           </div>
         </div>
@@ -1598,7 +1598,7 @@
         <div class="panel-inner">
           <div class="panel-card">
             <div class="verdict-header">
-              <h2 class="section-kicker" style="margin:0;">KuaiBuddy 六大核心能力域 × 23 项标准化能力图谱（点击域或标签交叉筛选）</h2>
+              <h2 class="section-kicker" id="cap-matrix-title" style="margin:0;">核心能力域与标准化能力图谱（点击域或标签交叉筛选）</h2>
               <button type="button" class="btn" id="btn-clear-cap-filter" hidden>清除能力筛选</button>
             </div>
             <div class="cap-grid">
@@ -1700,7 +1700,7 @@
             <h2 class="section-kicker">拖入或选择 Run 数据 JSON 即时刷新报告</h2>
             <div class="dropzone" id="json-dropzone">
               <p style="margin:0 0 8px;font-weight:700;color:var(--kb-text-strong);">将任意一次运行的 <span class="mono">report-data.json</span> 拖放到此处</p>
-              <p style="margin:0 0 14px;font-size:13px;color:var(--kb-text-sec);">支持只含 1 个 Case 的单次试跑 JSON、多 Case 局部组合 JSON，或全量 10 Case JSON；未传入的 Case 自动标记为「未执行」，不拉低本次通过率。</p>
+              <p style="margin:0 0 14px;font-size:13px;color:var(--kb-text-sec);">支持只含 1 个 Case 的单次试跑 JSON、多 Case 局部组合 JSON，或全量用例 JSON；未传入的 Case 自动标记为「未执行」，不拉低本次通过率。</p>
               <div class="filter-group" style="justify-content:center;">
                 <label class="btn btn-primary" for="json-file-input">选择 JSON 文件</label>
                 <input type="file" id="json-file-input" accept="application/json,.json" hidden />
@@ -1712,9 +1712,9 @@
           <div class="panel-card">
             <h2 class="section-kicker">内置多态演示切换（快速检验单 Case / 局部 / 全量布局表现）</h2>
             <div class="filter-group">
-              <button type="button" class="btn" data-demo="single">单 Case 专项态（1/10）</button>
-              <button type="button" class="btn" data-demo="sample">局部四态混合（4/10：通过/失败/阻塞/未执行）</button>
-              <button type="button" class="btn" data-demo="full">全量回归态（10/10）</button>
+              <button type="button" class="btn" data-demo="single">单用例专项态</button>
+              <button type="button" class="btn" data-demo="sample">局部四态混合（通过/失败/阻塞/未执行）</button>
+              <button type="button" class="btn" data-demo="full">全量回归态</button>
               <button type="button" class="btn" id="btn-restore-embedded">还原页面初始内嵌数据</button>
             </div>
           </div>
@@ -1739,7 +1739,299 @@
 
   <div class="toast" id="toast" hidden role="status" aria-live="polite"></div>
 
-  <!-- Fixed JSON injection slot replaced by render_suite_report.py -->
+  <!-- Fixed JSON injection slots replaced by render_suite_report.py -->
+  <script id="kb-suite-catalog" type="application/json">{
+  "suiteId": "KB-SUITE-001",
+  "source": "tests/cases/KB-SUITE-001.md",
+  "domains": [
+    {
+      "id": "core-chat",
+      "name": "核心对话与缓存引擎",
+      "shortName": "对话与缓存",
+      "tags": [
+        {
+          "tag": "prompt-cache",
+          "label": "前缀缓存命中率",
+          "caseId": "CASE-01"
+        },
+        {
+          "tag": "skill-load",
+          "label": "Skill 动态加载",
+          "caseId": "CASE-01"
+        },
+        {
+          "tag": "tool-execute",
+          "label": "多步工具循环",
+          "caseId": "CASE-01"
+        },
+        {
+          "tag": "multi-turn-context",
+          "label": "多轮上下文记忆",
+          "caseId": "CASE-01"
+        },
+        {
+          "tag": "no-redundant-tool",
+          "label": "防重复调工具",
+          "caseId": "CASE-01"
+        },
+        {
+          "tag": "sse-stream-followup",
+          "label": "流式分离与追问",
+          "caseId": "CASE-01"
+        }
+      ]
+    },
+    {
+      "id": "memory-context",
+      "name": "长上下文与记忆底座",
+      "shortName": "记忆与压缩",
+      "tags": [
+        {
+          "tag": "context-compaction",
+          "label": "上下文压缩保真",
+          "caseId": "CASE-02"
+        },
+        {
+          "tag": "large-file-read",
+          "label": "大文件分段读取",
+          "caseId": "CASE-02"
+        },
+        {
+          "tag": "long-memory",
+          "label": "跨会话长期记忆",
+          "caseId": "CASE-03"
+        }
+      ]
+    },
+    {
+      "id": "runtime-billing",
+      "name": "运行治理与积分安全",
+      "shortName": "治理与积分",
+      "tags": [
+        {
+          "tag": "write-confirm",
+          "label": "写闭环与越权拦截",
+          "caseId": "CASE-03"
+        },
+        {
+          "tag": "error-fallback",
+          "label": "工具异常诚实兜底",
+          "caseId": "CASE-03"
+        },
+        {
+          "tag": "run-control",
+          "label": "断连/并发/真中断",
+          "caseId": "CASE-08"
+        },
+        {
+          "tag": "points-billing",
+          "label": "积分四方精确对账",
+          "caseId": "CASE-08"
+        }
+      ]
+    },
+    {
+      "id": "sandbox-tools",
+      "name": "沙箱工程与联网工具",
+      "shortName": "沙箱与联网",
+      "tags": [
+        {
+          "tag": "fs-code-tools",
+          "label": "文件编辑检索工具链",
+          "caseId": "CASE-07"
+        },
+        {
+          "tag": "web-fetch",
+          "label": "公网抓取与搜索隔离",
+          "caseId": "CASE-07"
+        },
+        {
+          "tag": "todo-plan",
+          "label": "结构化待办维护",
+          "caseId": "CASE-07"
+        },
+        {
+          "tag": "tool-result-eviction",
+          "label": "超长卸载与超时拦截",
+          "caseId": "CASE-07"
+        }
+      ]
+    },
+    {
+      "id": "multimodal-auto",
+      "name": "多模态与自动化执行",
+      "shortName": "多模态与定时",
+      "tags": [
+        {
+          "tag": "multimodal-file",
+          "label": "产物入库与识图解析",
+          "caseId": "CASE-04"
+        },
+        {
+          "tag": "scheduled-task",
+          "label": "定时任务与触发隔离",
+          "caseId": "CASE-06"
+        },
+        {
+          "tag": "image-gen",
+          "label": "文/图生图与 COS 闭环",
+          "caseId": "CASE-10"
+        }
+      ]
+    },
+    {
+      "id": "open-assets",
+      "name": "开放连接与个人资产",
+      "shortName": "MCP与个人Skill",
+      "tags": [
+        {
+          "tag": "mcp-connector",
+          "label": "个人 MCP 全生命周期",
+          "caseId": "CASE-05"
+        },
+        {
+          "tag": "user-skill-crud",
+          "label": "个人 Skill 增删启停隔离",
+          "caseId": "CASE-09"
+        }
+      ]
+    }
+  ],
+  "cases": [
+    {
+      "id": "CASE-01",
+      "title": "Skill 加载与多轮工具调用 Prompt 缓存命中率验证",
+      "shortLabel": "Skill 加载与多轮工具调",
+      "priority": "P1",
+      "domainId": "core-chat",
+      "tags": [
+        "prompt-cache",
+        "skill-load",
+        "tool-execute",
+        "multi-turn-context",
+        "no-redundant-tool",
+        "sse-stream-followup"
+      ],
+      "goal": "验证在加载 Skill、连续多轮工具调用、工具结果入历史后纯文本追问、长上下文二次工具调用等真实场景下，LLM 前缀缓存（Prompt Cache）的跨轮与轮内命中率是否稳定。",
+      "cmdTemplate": "KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js ask \"/快商通 IM 助手\" --out \"<OUT_DIR>/turn-1\" --json"
+    },
+    {
+      "id": "CASE-02",
+      "title": "上下文压缩触发与关键信息保真验证",
+      "shortLabel": "上下文压缩触发与关键信息保真",
+      "priority": "P1",
+      "domainId": "memory-context",
+      "tags": [
+        "context-compaction",
+        "large-file-read"
+      ],
+      "goal": "验证当对话历史估算 Token 数达到目标环境配置阈值时，是否精准触发上下文压缩（Compaction）；压缩后初始关键业务实体是否完整保留不失忆，且上下文体积回落后能正常继续对话与重建缓存。",
+      "cmdTemplate": "参照 tests/cases/KB-SUITE-001.md CASE-02 执行模板"
+    },
+    {
+      "id": "CASE-03",
+      "title": "跨会话长期记忆闭环与异常越权兜底验证",
+      "shortLabel": "跨会话长期记忆闭环与异常越权",
+      "priority": "P1",
+      "domainId": "memory-context",
+      "tags": [
+        "long-memory",
+        "error-fallback",
+        "write-confirm"
+      ],
+      "goal": "验证交互式会话的跨会话长期记忆「写入 → 新会话自动召回生效 → 读取与精准删除自清理」闭环，同时验证在文件读取失败与非法/不存在 ID 写操作（定时任务删除）拦截场景下，Agent 是否诚实报错、快速收敛且不编造成功结果。",
+      "cmdTemplate": "KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js ask \"请调用 memory_save 记住一条长期偏好...\" --out \"<OUT_DIR>/session-a-1\" --json"
+    },
+    {
+      "id": "CASE-04",
+      "title": "多模态文件产物交付与视觉识图解析验证",
+      "shortLabel": "产物入库与识图解析",
+      "priority": "P1",
+      "domainId": "multimodal-auto",
+      "tags": [
+        "multimodal-file"
+      ],
+      "goal": "验证主 Agent 直接在工作区生成高对比度 PNG 图片与 Markdown 文档、通过 save_to_library 持久化交付真实 accessUrl（无沙箱内部路径泄漏），以及调用 analyze_image 识别图片数字内容的端到端闭环（不依赖已取消的子代理能力）。",
+      "cmdTemplate": "KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js ask \"请在当前工作区完成两件事（直接由你执行，不要调用...\" --out \"<OUT_DIR>/turn-1\" --json"
+    },
+    {
+      "id": "CASE-05",
+      "title": "个人 MCP 连接器全生命周期与安全边界验证",
+      "shortLabel": "个人 MCP 全生命周期",
+      "priority": "P1",
+      "domainId": "open-assets",
+      "tags": [
+        "mcp-connector"
+      ],
+      "goal": "验证个人 MCP 连接器从安全准入校验（SSRF 环回 IP / URL 查询参数凭据拦截）、远端工具发现、最小工具授权持久化（SELECTED）、对话内前缀挂载与正/负向工具调用（含跨轮 Prompt Cache 稳定性）、停用即时拦截到测试后物理删除自清理的完整闭环。",
+      "cmdTemplate": "参照 tests/cases/KB-SUITE-001.md CASE-05 执行模板"
+    },
+    {
+      "id": "CASE-06",
+      "title": "定时任务全生命周期管理与触发隔离验证",
+      "shortLabel": "定时任务与触发隔离",
+      "priority": "P1",
+      "domainId": "multimodal-auto",
+      "tags": [
+        "scheduled-task"
+      ],
+      "goal": "验证定时任务 7 个内置管理工具（create_schedule / list_schedules / update_schedule_info / pause_schedule / resume_schedule / update_schedule_frequency / delete_schedule）的完整闭环，校验 XXL-JOB 真实到点触发执行与新指令生效，并审计定时会话的隔离边界（不挂载长期记忆与定时任务工具）。",
+      "cmdTemplate": "KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js ask \"<TURN_1_PROMPT>\" --out \"<OUT_DIR>/turn-1\" --json"
+    },
+    {
+      "id": "CASE-07",
+      "title": "框架文件检索、任务规划、联网抓取与大输出卸载验证",
+      "shortLabel": "框架文件检索、任务规划、联网",
+      "priority": "P1",
+      "domainId": "sandbox-tools",
+      "tags": [
+        "fs-code-tools",
+        "web-fetch",
+        "todo-plan",
+        "tool-result-eviction"
+      ],
+      "goal": "验证框架自带文件编辑与检索工具链（write_file / edit_file / list_files / glob_files / grep_files）、结构化待办维护（todo_write）、网页抓取（web_fetch 及 web_search 默认禁用隔离）、超长命令输出自动卸载（ToolResultEviction）与命令行超时预算前置拦截（requireShellBudget）。",
+      "cmdTemplate": "KB_ENV_FILE=<ENV_FILE> node .agents/skills/kb-test-execution/scripts/kb_e2e.js ask \"<第1轮固定提示词>\" --out \"<OUT_DIR>/turn-1\" --json"
+    },
+    {
+      "id": "CASE-08",
+      "title": "运行态控制（断连重连／并发拦截／真中断）与积分计费对账验证",
+      "shortLabel": "运行态控制与积分计费对账",
+      "priority": "P1",
+      "domainId": "runtime-billing",
+      "tags": [
+        "run-control",
+        "points-billing"
+      ],
+      "goal": "验证交互式运行态控制 4 项核心契约（SSE 断连不断执行与 /run/observe 全量重放续接、同会话并发 4006 拦截且不扰乱原 Run、/run/cancel 真实打断多步写任务不泄漏后台写入、取消后立即续问不锁死会话），并在同一组执行上完成积分账户余额、SSE usage、轮次消费汇总 /points/consumptions、逐笔流水 /points/records 与 Langfuse LF_ENV 调用轨迹的四方精确对账。",
+      "cmdTemplate": "参照 tests/cases/KB-SUITE-001.md CASE-08 执行模板"
+    },
+    {
+      "id": "CASE-09",
+      "title": "个人 Skill 全生命周期与隔离边界验证",
+      "shortLabel": "个人 Skill 增删启停隔离",
+      "priority": "P1",
+      "domainId": "open-assets",
+      "tags": [
+        "user-skill-crud"
+      ],
+      "goal": "验证个人 Skill（scope=3）从 HTTP 包校验与全局重名拦截（4102/4104）、对话内创建／查询／ZIP 导出（save_skill / query_skill）、内置全局 Skill 读取隔离、跨会话动态加载生效、同名覆盖更新、Web 启停实时可见性隔离到安全自清理的完整闭环。",
+      "cmdTemplate": "参照 tests/cases/KB-SUITE-001.md CASE-09 执行模板"
+    },
+    {
+      "id": "CASE-10",
+      "title": "AI 图像生成自动入库与任务附件发现验证",
+      "shortLabel": "文/图生图与 COS 闭环",
+      "priority": "P1",
+      "domainId": "multimodal-auto",
+      "tags": [
+        "image-gen"
+      ],
+      "goal": "验证 text_to_image（文生图）与 image_to_image（基于前图 URL 链式参考图生图）结合 ImageGenPostProcessor 自动积分结算与永久 COS 入库（无需再调用 save_image_to_library）、list_attachments 任务附件发现，以及 /library/delete 同时软删数据库记录与物理删除 COS 对象（删后 HTTP 404）的端到端闭环。",
+      "cmdTemplate": "参照 tests/cases/KB-SUITE-001.md CASE-10 执行模板"
+    }
+  ]
+}</script>
   <script id="kb-report-data" type="application/json">{
   "schemaVersion": "kb-suite-001-report.v1",
   "isPlaceholderDemo": true,
@@ -1840,35 +2132,9 @@
     "compactionThreshold": "400,000 tokens · trigger-messages=0",
     "toolLimits": "read_file ≤ 64,000 字符 · K8s 沙箱（180s 超时）"
   },
-  "aiSummary": {
-    "source": "模板内置示例",
-    "headline": "演示视图：CASE-01 与 CASE-08 共 2 项通过（验证 8/23 项能力），核心链路运行稳定。",
-    "sections": [
-      {
-        "title": "核心结论",
-        "items": [
-          "已测 CASE-01（对话与缓存，命中率 97.4%）与 CASE-08（运行控制与积分对账）均通过。",
-          "跨轮缓存复用正常，断连重放、并发拦截、真中断与四方账本一致。"
-        ]
-      },
-      {
-        "title": "效能与资源",
-        "items": [
-          "演示总耗时 2m 15s，净消耗 14.5 积分，沙箱无残留。"
-        ]
-      },
-      {
-        "title": "覆盖缺口",
-        "items": [
-          "尚有 8 项用例处于未执行演示态。"
-        ]
-      }
-    ],
-    "recommendation": "可通过「数据加载与离线导出」导入真实运行结果。"
-  },
   "notes": {
     "facts": [
-      "模板直接内嵌了 KB-SUITE-001 全集 10 个用例与 6 大能力域 23 项能力定义。",
+      "报告目录由当前测试集自动解析注入，支持任意规模用例与能力域扩展。",
       "当仅传入 1 个或部分用例结果时，其余用例自动标注为「未执行」，不计入失败，也不拉低本次执行通过率。"
     ],
     "inferences": [
@@ -1888,168 +2154,17 @@
       "use strict";
 
       /* =====================================================================
-         Static catalog of KB-SUITE-001 (10 cases x 6 domains x 23 tags)
+         Dynamic catalog injected from KB-SUITE-001.md via #kb-suite-catalog
          ===================================================================== */
-      const SUITE_DOMAINS = [
-        {
-          id: "core-chat",
-          name: "核心对话与缓存引擎",
-          shortName: "对话与缓存",
-          tags: [
-            { tag: "prompt-cache", label: "前缀缓存命中率", caseId: "CASE-01" },
-            { tag: "skill-load", label: "Skill 动态加载", caseId: "CASE-01" },
-            { tag: "tool-execute", label: "多步工具循环", caseId: "CASE-01" },
-            { tag: "multi-turn-context", label: "多轮上下文记忆", caseId: "CASE-01" },
-            { tag: "no-redundant-tool", label: "防重复调工具", caseId: "CASE-01" },
-            { tag: "sse-stream-followup", label: "流式分离与追问", caseId: "CASE-01" }
-          ]
-        },
-        {
-          id: "memory-context",
-          name: "长上下文与记忆底座",
-          shortName: "记忆与压缩",
-          tags: [
-            { tag: "context-compaction", label: "上下文压缩保真", caseId: "CASE-02" },
-            { tag: "large-file-read", label: "大文件分段读取", caseId: "CASE-02" },
-            { tag: "long-memory", label: "跨会话长期记忆", caseId: "CASE-03" }
-          ]
-        },
-        {
-          id: "runtime-billing",
-          name: "运行治理与积分安全",
-          shortName: "治理与积分",
-          tags: [
-            { tag: "write-confirm", label: "写闭环与越权拦截", caseId: "CASE-03" },
-            { tag: "error-fallback", label: "工具异常诚实兜底", caseId: "CASE-03" },
-            { tag: "run-control", label: "断连/并发/真中断", caseId: "CASE-08" },
-            { tag: "points-billing", label: "积分四方精确对账", caseId: "CASE-08" }
-          ]
-        },
-        {
-          id: "sandbox-tools",
-          name: "沙箱工程与联网工具",
-          shortName: "沙箱与联网",
-          tags: [
-            { tag: "fs-code-tools", label: "文件编辑检索工具链", caseId: "CASE-07" },
-            { tag: "web-fetch", label: "公网抓取与搜索隔离", caseId: "CASE-07" },
-            { tag: "todo-plan", label: "结构化待办维护", caseId: "CASE-07" },
-            { tag: "tool-result-eviction", label: "超长卸载与超时拦截", caseId: "CASE-07" }
-          ]
-        },
-        {
-          id: "multimodal-auto",
-          name: "多模态与自动化执行",
-          shortName: "多模态与定时",
-          tags: [
-            { tag: "agent-switch", label: "子 Agent 派发协作", caseId: "CASE-04" },
-            { tag: "multimodal-file", label: "产物入库与识图解析", caseId: "CASE-04" },
-            { tag: "scheduled-task", label: "定时任务与触发隔离", caseId: "CASE-06" },
-            { tag: "image-gen", label: "文/图生图与 COS 闭环", caseId: "CASE-10" }
-          ]
-        },
-        {
-          id: "open-assets",
-          name: "开放连接与个人资产",
-          shortName: "MCP与个人Skill",
-          tags: [
-            { tag: "mcp-connector", label: "个人 MCP 全生命周期", caseId: "CASE-05" },
-            { tag: "user-skill-crud", label: "个人 Skill 增删启停隔离", caseId: "CASE-09" }
-          ]
-        }
-      ];
+      const CATALOG_JSON_TEXT = (document.getElementById("kb-suite-catalog") || {}).textContent || "";
+      const BASE_CATALOG = safeParseJson(CATALOG_JSON_TEXT.trim()) || { suiteId: "KB-SUITE-001", domains: [], cases: [] };
 
-      const SUITE_CASES = [
-        {
-          id: "CASE-01",
-          title: "Skill 加载与多轮工具调用 Prompt 缓存命中率验证",
-          priority: "P1",
-          domainId: "core-chat",
-          tags: ["prompt-cache", "skill-load", "tool-execute", "multi-turn-context", "no-redundant-tool", "sse-stream-followup"],
-          goal: "验证加载 Skill、连续工具调用、工具结果入历史后纯文本追问及长上下文二次调用下的前缀缓存命中率稳定性。",
-          cmdTemplate: 'KB_ENV_FILE=.env.<ENV> node .agents/skills/kb-test-execution/scripts/kb_e2e.js ask "/快商通 IM 助手" --out ".runtime/scratch/case01/turn-1" --json'
-        },
-        {
-          id: "CASE-02",
-          title: "上下文压缩触发与关键信息保真验证",
-          priority: "P1",
-          domainId: "memory-context",
-          tags: ["context-compaction", "large-file-read"],
-          goal: "验证达到环境 trigger-tokens 时精准触发 history_compaction、初始锚点实体不失忆及压缩后缓存重建。",
-          cmdTemplate: 'KB_ENV_FILE=.env.<ENV> node .agents/skills/kb-test-execution/scripts/kb_e2e.js ask "请记住以下本次任务的三个核心锚点信息..." --out ".runtime/scratch/case02/turn-1" --json'
-        },
-        {
-          id: "CASE-03",
-          title: "跨会话长期记忆闭环与异常越权兜底验证",
-          priority: "P1",
-          domainId: "memory-context",
-          tags: ["long-memory", "error-fallback", "write-confirm"],
-          goal: "验证长期记忆写入、新会话自动召回、精准清理闭环，以及文件不存在/非法任务 ID 删除拦截时诚实报错不编造。",
-          cmdTemplate: 'KB_ENV_FILE=.env.<ENV> node .agents/skills/kb-test-execution/scripts/kb_e2e.js ask "请调用 memory_save 记住一条长期偏好..." --out ".runtime/scratch/case03/turn-1" --json'
-        },
-        {
-          id: "CASE-04",
-          title: "子 Agent 派发、识图与文件产物交付验证",
-          priority: "P1",
-          domainId: "multimodal-auto",
-          tags: ["agent-switch", "multimodal-file"],
-          goal: "验证 agent_spawn 派发生成图文产物、save_image_to_library / save_to_library 入库与 analyze_image 识图闭环。",
-          cmdTemplate: 'KB_ENV_FILE=.env.<ENV> node .agents/skills/kb-test-execution/scripts/kb_e2e.js ask "请使用 agent_spawn 派发一个子 Agent..." --out ".runtime/scratch/case04/turn-1" --json'
-        },
-        {
-          id: "CASE-05",
-          title: "个人 MCP 连接器全生命周期与安全边界验证",
-          priority: "P1",
-          domainId: "open-assets",
-          tags: ["mcp-connector"],
-          goal: "验证 SSRF 8004 拦截、远端工具发现与最小授权持久化、对话内前缀调用、异常兜底、停用隔离与物理删除自清理。",
-          cmdTemplate: "参照 tests/cases/KB-SUITE-001.md CASE-05 执行模板串联 /web/agent/api/v1/mcp-connector/* 与对话"
-        },
-        {
-          id: "CASE-06",
-          title: "定时任务全生命周期管理与触发隔离验证",
-          priority: "P1",
-          domainId: "multimodal-auto",
-          tags: ["scheduled-task"],
-          goal: "验证 7 个定时任务内置工具、XXL-JOB 到点执行、新指令生效及 sched_* 会话隔离（无长期记忆与定时工具）。",
-          cmdTemplate: 'KB_ENV_FILE=.env.<ENV> node .agents/skills/kb-test-execution/scripts/kb_e2e.js ask "请调用 create_schedule 创建一个每日定时任务..." --out ".runtime/scratch/case06/turn-1" --json'
-        },
-        {
-          id: "CASE-07",
-          title: "框架文件检索、任务规划、联网抓取与大输出卸载验证",
-          priority: "P1",
-          domainId: "sandbox-tools",
-          tags: ["fs-code-tools", "web-fetch", "todo-plan", "tool-result-eviction"],
-          goal: "验证 todo_write、web_fetch、文件检索编辑工具链、90k 输出自动卸载预览与 timeout=600 前置拦截及残余清理。",
-          cmdTemplate: 'KB_ENV_FILE=.env.<ENV> node .agents/skills/kb-test-execution/scripts/kb_e2e.js ask "请先调用 todo_write 创建包含 4 个步骤的待办清单..." --out ".runtime/scratch/case07/turn-1" --json'
-        },
-        {
-          id: "CASE-08",
-          title: "运行态控制（断连重连／并发拦截／真中断）与积分计费对账验证",
-          priority: "P1",
-          domainId: "runtime-billing",
-          tags: ["run-control", "points-billing"],
-          goal: "验证断连不断执行与 /run/observe 重放、并发 4006 拦截、/run/cancel 防写入泄漏与续问防锁死，以及账户/SSE/汇总/明细四方对账。",
-          cmdTemplate: "参照 tests/cases/KB-SUITE-001.md CASE-08 执行模板串联 /service/agent/api/v1/agent/run* 与 /points/*"
-        },
-        {
-          id: "CASE-09",
-          title: "个人 Skill 全生命周期与隔离边界验证",
-          priority: "P1",
-          domainId: "open-assets",
-          tags: ["user-skill-crud"],
-          goal: "验证 4102/4104 包与全局重名校验、对话创建导出与内置技能隔离、跨会话 _import 静默加载、同名覆盖与启停删除防复活。",
-          cmdTemplate: "参照 tests/cases/KB-SUITE-001.md CASE-09 执行模板串联 /web/agent/api/v1/skill/user* 与对话"
-        },
-        {
-          id: "CASE-10",
-          title: "AI 图像生成自动入库与任务附件发现验证",
-          priority: "P1",
-          domainId: "multimodal-auto",
-          tags: ["image-gen"],
-          goal: "验证 text_to_image 与链式 image_to_image 自动结算入库（免调 save_image_to_library）、list_attachments 与删后 COS 404。",
-          cmdTemplate: 'KB_ENV_FILE=.env.<ENV> node .agents/skills/kb-test-execution/scripts/kb_e2e.js ask "请调用 text_to_image 生成 1 张极简测试图..." --out ".runtime/scratch/case10/turn-1" --json'
+      function getActiveCatalog(raw) {
+        if (raw && raw.catalog && Array.isArray(raw.catalog.domains) && Array.isArray(raw.catalog.cases)) {
+          return raw.catalog;
         }
-      ];
+        return BASE_CATALOG;
+      }
 
       const STATUS_META = {
         passed: { label: "通过", pillClass: "pill-ok", order: 2 },
@@ -2165,21 +2280,30 @@
           cleanupNote: ""
         }, (raw && raw.meta) || {});
 
+        const catalog = getActiveCatalog(raw);
+        const catalogDomains = Array.isArray(catalog.domains) ? catalog.domains : [];
+        const catalogCases = Array.isArray(catalog.cases) ? catalog.cases : [];
+
         const byId = new Map();
         const rawCases = Array.isArray(raw && raw.cases) ? raw.cases : [];
         for (const item of rawCases) {
           if (item && item.id) byId.set(item.id, item);
         }
 
-        const mergedCases = SUITE_CASES.map((def) => {
+        const seenCatalogIds = new Set();
+        const mergedCases = catalogCases.map((def) => {
+          seenCatalogIds.add(def.id);
           const supplied = byId.get(def.id) || {};
           const st = STATUS_META[supplied.status] ? supplied.status : "not_run";
           return Object.assign({}, def, supplied, {
             id: def.id,
-            title: def.title,
-            priority: def.priority,
+            title: def.title || supplied.title || def.id,
+            shortLabel: def.shortLabel || supplied.shortLabel || def.title || def.id,
+            priority: def.priority || supplied.priority || "P1",
             domainId: def.domainId,
-            tags: def.tags,
+            tags: Array.isArray(def.tags) ? def.tags : [],
+            goal: def.goal || supplied.summary || "",
+            cmdTemplate: def.cmdTemplate || "",
             status: st,
             threadIds: Array.isArray(supplied.threadIds) ? supplied.threadIds : [],
             runIds: Array.isArray(supplied.runIds) ? supplied.runIds : [],
@@ -2191,6 +2315,29 @@
           });
         });
 
+        for (const item of rawCases) {
+          if (!item || !item.id || seenCatalogIds.has(item.id)) continue;
+          const st = STATUS_META[item.status] ? item.status : "not_run";
+          mergedCases.push(Object.assign({}, item, {
+            id: item.id,
+            title: item.title || item.id,
+            shortLabel: item.shortLabel || item.title || item.id,
+            priority: item.priority || "P1",
+            domainId: item.domainId || (catalogDomains[0] && catalogDomains[0].id) || "legacy",
+            tags: Array.isArray(item.tags) ? item.tags : [],
+            goal: item.goal || item.summary || "",
+            cmdTemplate: item.cmdTemplate || "",
+            status: st,
+            threadIds: Array.isArray(item.threadIds) ? item.threadIds : [],
+            runIds: Array.isArray(item.runIds) ? item.runIds : [],
+            metrics: item.metrics || {},
+            steps: Array.isArray(item.steps) ? item.steps : [],
+            calibrations: Array.isArray(item.calibrations) ? item.calibrations : [],
+            evidencePaths: Array.isArray(item.evidencePaths) ? item.evidencePaths : [],
+            cleanup: item.cleanup || null
+          }));
+        }
+
         const counts = { passed: 0, failed: 0, blocked: 0, not_run: 0 };
         for (const c of mergedCases) counts[c.status]++;
         const executed = mergedCases.length - counts.not_run;
@@ -2199,12 +2346,12 @@
         let totalTags = 0;
         let verifiedTags = 0;
         let passedTags = 0;
-        const domainStats = SUITE_DOMAINS.map((dom) => {
+        const domainStats = catalogDomains.map((dom) => {
           let domExec = 0;
           let domPass = 0;
-          const tags = dom.tags.map((t) => {
+          const tags = (Array.isArray(dom.tags) ? dom.tags : []).map((t) => {
             totalTags++;
-            const st = caseStatusMap.get(t.caseId) || "not_run";
+            const st = t.caseId ? (caseStatusMap.get(t.caseId) || "not_run") : "not_run";
             if (st !== "not_run") {
               verifiedTags++;
               domExec++;
@@ -2218,7 +2365,7 @@
           return {
             id: dom.id,
             name: dom.name,
-            shortName: dom.shortName,
+            shortName: dom.shortName || dom.name,
             total: tags.length,
             executed: domExec,
             passed: domPass,
@@ -2235,14 +2382,14 @@
           counts,
           executed,
           totalCases: mergedCases.length,
-            totalTags,
-            verifiedTags,
-            passedTags,
-            domainStats,
-            envConfig: raw && raw.envConfig && typeof raw.envConfig === "object" ? raw.envConfig : null,
-            aiSummary: raw && raw.aiSummary && typeof raw.aiSummary === "object" ? raw.aiSummary : null,
-            notes: Object.assign({ facts: [], inferences: [], gaps: [], calibrations: [] }, (raw && raw.notes) || {})
-          };
+          totalTags,
+          verifiedTags,
+          passedTags,
+          domainStats,
+          envConfig: raw && raw.envConfig && typeof raw.envConfig === "object" ? raw.envConfig : null,
+          aiSummary: raw && raw.aiSummary && typeof raw.aiSummary === "object" ? raw.aiSummary : null,
+          notes: Object.assign({ facts: [], inferences: [], gaps: [], calibrations: [] }, (raw && raw.notes) || {})
+        };
       }
 
       /* =====================================================================
@@ -2277,7 +2424,7 @@
         let scopeCls = "pill-notrun";
         if (model.executed === 1) {
           const single = model.cases.find((c) => c.status !== "not_run");
-          scopeText = `单用例专项 · ${single ? single.id : "1/10"}`;
+          scopeText = `单用例专项 · ${single ? single.id : `1/${model.totalCases}`}`;
           scopeCls = "pill-brand";
         } else if (model.executed > 1 && model.executed < model.totalCases) {
           scopeText = `局部组合 · ${model.executed}/${model.totalCases} 用例`;
@@ -2306,7 +2453,7 @@
           verdictTitle.textContent = "尚无已执行用例结果";
           verdictPill.className = "pill pill-notrun";
           verdictPill.textContent = "待执行";
-          verdictSummary.textContent = "当前报告尚未注入已执行用例数据；全部 10 个回归用例处于未执行状态。";
+          verdictSummary.textContent = `当前报告尚未注入已执行用例数据；全部 ${totalCases} 个回归用例处于未执行状态。`;
         } else if (counts.failed > 0) {
           verdictTitle.textContent = `发现 ${counts.failed} 项失败用例`;
           verdictPill.className = "pill pill-fail";
@@ -2342,15 +2489,25 @@
         }
         passSub.textContent = `${counts.passed} 通过 / ${executed} 已执行`;
 
-        const covPct = Math.round((verifiedTags / totalTags) * 100);
+        const covPct = totalTags ? Math.round((verifiedTags / totalTags) * 100) : 0;
         document.getElementById("ring-cov-val").textContent = `${covPct}%`;
-        document.getElementById("ring-cov-circle").style.strokeDashoffset = String(CIRC * (1 - verifiedTags / totalTags));
+        document.getElementById("ring-cov-circle").style.strokeDashoffset = String(CIRC * (1 - (totalTags ? verifiedTags / totalTags : 0)));
         document.getElementById("ring-cov-sub").textContent = `${verifiedTags} / ${totalTags} 能力标签 · ${executed} / ${totalCases} 用例`;
 
-        document.getElementById("seg-passed").style.width = `${(counts.passed / totalCases) * 100}%`;
-        document.getElementById("seg-failed").style.width = `${(counts.failed / totalCases) * 100}%`;
-        document.getElementById("seg-blocked").style.width = `${(counts.blocked / totalCases) * 100}%`;
-        document.getElementById("seg-notrun").style.width = `${(counts.not_run / totalCases) * 100}%`;
+        const capTitle = document.getElementById("cap-matrix-title");
+        if (capTitle) {
+          capTitle.textContent = `KuaiBuddy ${model.domainStats.length} 大核心能力域 × ${totalTags} 项标准化能力图谱（点击域或标签交叉筛选）`;
+        }
+        const radarSvg = document.getElementById("radar-svg");
+        if (radarSvg) {
+          radarSvg.setAttribute("aria-label", `KuaiBuddy ${model.domainStats.length} 大核心能力域覆盖与健康雷达图`);
+        }
+
+        const safeCases = totalCases || 1;
+        document.getElementById("seg-passed").style.width = `${(counts.passed / safeCases) * 100}%`;
+        document.getElementById("seg-failed").style.width = `${(counts.failed / safeCases) * 100}%`;
+        document.getElementById("seg-blocked").style.width = `${(counts.blocked / safeCases) * 100}%`;
+        document.getElementById("seg-notrun").style.width = `${(counts.not_run / safeCases) * 100}%`;
 
         document.getElementById("cnt-passed").textContent = counts.passed;
         document.getElementById("cnt-failed").textContent = counts.failed;
@@ -2391,18 +2548,9 @@
         `).join("");
       }
 
-      const CASE_SHORT_LABEL = {
-        "CASE-01": "对话与缓存",
-        "CASE-02": "上下文压缩",
-        "CASE-03": "长期记忆与异常兜底",
-        "CASE-04": "子Agent与图文交付",
-        "CASE-05": "个人MCP连接器",
-        "CASE-06": "定时任务生命周期",
-        "CASE-07": "沙箱文件与联网抓取",
-        "CASE-08": "运行控制与积分对账",
-        "CASE-09": "个人Skill生命周期",
-        "CASE-10": "AI生图与COS闭环"
-      };
+      function caseLabelOf(c) {
+        return (c && c.shortLabel) || "";
+      }
 
       function compactCaseIssue(c, targetStatus) {
         const steps = Array.isArray(c.steps) ? c.steps : [];
@@ -2420,12 +2568,17 @@
         const m = meta || {};
         const cleanLabel = CLEANUP_LABEL[m.cleanupStatus] || m.cleanupStatus || "未核验";
         const ptsText = m.pointsConsumed != null ? `${m.pointsConsumed} 积分` : "未统计积分";
+        const domainCount = model.domainStats.length;
         const uncoveredDomains = model.domainStats.filter((d) => d.executed === 0).map((d) => d.name);
         const gapLine = uncoveredDomains.length > 0
           ? `尚有 ${counts.not_run} 项未执行，待覆盖「${uncoveredDomains.join("」「")}」（未执行不计入失败）。`
-          : `全集 6 大能力域 ${totalTags}/${totalTags} 项核心能力均已完成验证。`;
+          : `全集 ${domainCount} 大能力域 ${totalTags}/${totalTags} 项核心能力均已完成验证。`;
 
         if (executed === 0) {
+          const initTargets = model.cases.slice(0, 2).map((c) => {
+            const lbl = caseLabelOf(c);
+            return lbl ? `${c.id}（${lbl}）` : c.id;
+          });
           return {
             tone: "tone-neutral",
             headline: `尚无已执行用例数据，全部 ${totalCases} 个回归用例处于待测状态。`,
@@ -2443,7 +2596,9 @@
                 items: [gapLine]
               }
             ],
-            recommendation: "建议优先执行 CASE-01（对话与缓存）或 CASE-08（运行控制与积分对账）。"
+            recommendation: initTargets.length
+              ? `建议优先执行 ${initTargets.join(" 或 ")}。`
+              : "请先在测试集目录中定义待执行用例。"
           };
         }
 
@@ -2490,9 +2645,10 @@
         if (counts.failed > 0) {
           const failedIds = failedCases.map((c) => c.id).join(" / ");
           const firstFailed = failedCases[0];
+          const firstFailedLbl = caseLabelOf(firstFailed);
           const capItems = [
             `执行通过率 ${passPct}%（通过 ${counts.passed}、失败 ${counts.failed}、阻塞 ${counts.blocked}），已验证 ${verifiedTags}/${totalTags} 项能力。`,
-            `主要问题：${firstFailed.id} ${CASE_SHORT_LABEL[firstFailed.id] || ""} — ${compactCaseIssue(firstFailed, "failed")}。`
+            `主要问题：${firstFailed.id}${firstFailedLbl ? " " + firstFailedLbl : ""} — ${compactCaseIssue(firstFailed, "failed")}。`
           ];
           if (counts.blocked > 0) {
             capItems.push(`阻塞用例：${blockedCases.map((c) => `${c.id}（${compactCaseIssue(c, "blocked")}）`).join("；")}。`);
@@ -2514,11 +2670,12 @@
         if (counts.blocked > 0) {
           const blockedIds = blockedCases.map((c) => c.id).join(" / ");
           const firstBlocked = blockedCases[0];
+          const firstBlockedLbl = caseLabelOf(firstBlocked);
           const capItems = [];
           if (passedCases.length > 0) {
             capItems.push(`已通过 ${passedCases.map((c) => c.id).join(" / ")}（未发现功能异常），累计验证 ${verifiedTags}/${totalTags} 项能力。`);
           }
-          capItems.push(`主要阻塞：${firstBlocked.id} ${CASE_SHORT_LABEL[firstBlocked.id] || ""} — ${compactCaseIssue(firstBlocked, "blocked")}。`);
+          capItems.push(`主要阻塞：${firstBlocked.id}${firstBlockedLbl ? " " + firstBlockedLbl : ""} — ${compactCaseIssue(firstBlocked, "blocked")}。`);
           if (cacheNote) capItems.push(`关键指标：${cacheNote}。`);
 
           return {
@@ -2542,13 +2699,17 @@
           `已覆盖「${coveredDomains.join("」「")}」能力域，功能校验均符合预期。`
         ];
         if (cacheNote) capItems.push(`关键指标：${cacheNote}。`);
-        capItems.push(`通过项摘要：${passedCases.slice(0, 4).map((c) => `${c.id}（${CASE_SHORT_LABEL[c.id] || c.domain}）`).join("、")}${passedCases.length > 4 ? " 等" : ""}。`);
+        capItems.push(`通过项摘要：${passedCases.slice(0, 4).map((c) => {
+          const lbl = caseLabelOf(c);
+          return lbl ? `${c.id}（${lbl}）` : c.id;
+        }).join("、")}${passedCases.length > 4 ? " 等" : ""}。`);
 
         let recommendation;
         if (counts.not_run > 0) {
           const notRunIds = model.cases.filter((c) => c.status === "not_run").map((c) => c.id);
           const priorityPick = ["CASE-01", "CASE-08", "CASE-02", "CASE-07"].filter((id) => notRunIds.includes(id));
-          const nextTargets = (priorityPick.length ? priorityPick : notRunIds).slice(0, 2);
+          const orderedTargets = [...priorityPick, ...notRunIds.filter((id) => !priorityPick.includes(id))];
+          const nextTargets = orderedTargets.slice(0, 2);
           recommendation = `其余 ${counts.not_run} 项用例本次未执行；全量回归建议优先补测 ${nextTargets.join(" 与 ")}。`;
         } else {
           recommendation = `全量 ${totalCases}/${totalCases} 项用例（${totalTags}/${totalTags} 项能力）均已验证通过，满足发布放行条件。`;
@@ -2684,7 +2845,7 @@
           activeBadge.hidden = false;
           activeBadge.textContent = `能力筛选：#${uiState.tagFilter}`;
         } else if (uiState.domainFilter) {
-          const dom = SUITE_DOMAINS.find((d) => d.id === uiState.domainFilter);
+          const dom = domainStats.find((d) => d.id === uiState.domainFilter);
           activeBadge.hidden = false;
           activeBadge.textContent = `能力域：${dom ? dom.name : uiState.domainFilter}`;
         } else {
@@ -3275,14 +3436,19 @@
       });
 
       function buildDemoData(mode) {
+        const catCases = Array.isArray(BASE_CATALOG.cases) ? BASE_CATALOG.cases : [];
+        const catDomains = Array.isArray(BASE_CATALOG.domains) ? BASE_CATALOG.domains : [];
+        const catTagCount = catDomains.reduce((sum, d) => sum + (Array.isArray(d.tags) ? d.tags.length : 0), 0);
+
         if (mode === "single") {
+          const target = catCases.find((c) => c.id === "CASE-09") || catCases[0] || { id: "CASE-01", title: "单用例演示" };
           return {
             schemaVersion: "kb-suite-001-report.v1",
             isPlaceholderDemo: true,
             meta: {
-              suiteId: "KB-SUITE-001",
+              suiteId: BASE_CATALOG.suiteId || "KB-SUITE-001",
               taskId: "无（单用例预览）",
-              runId: "DEMO-SINGLE-CASE09",
+              runId: `DEMO-SINGLE-${target.id}`,
               env: "preprod",
               langfuseEnv: "prd",
               startedAt: "2026-11-26 09:08:10 +08:00",
@@ -3292,7 +3458,7 @@
               modelSummary: "deepseek-v4-1-flash",
               pointsConsumed: 7.33,
               cleanupStatus: "passed",
-              cleanupNote: "测试 Skill 已启用并物理删除"
+              cleanupNote: "测试资产已启用并物理删除"
             },
             envConfig: {
               source: "单用例演示配置",
@@ -3305,24 +3471,24 @@
             },
             cases: [
               {
-                id: "CASE-09",
+                id: target.id,
                 status: "passed",
-                summary: "单用例专项演示：个人 Skill 负向 4102/4104、隔离报错、跨会话 _import 加载、覆盖 V2 与启停删除均通过。",
+                summary: `单用例专项演示：${target.title}全部检查点通过。`,
                 durationMs: 56000,
                 threadIds: ["thread_demo_a", "thread_demo_b"],
-                runIds: ["run_demo_09_1", "run_demo_09_2", "run_demo_09_3"],
+                runIds: ["run_demo_1", "run_demo_2"],
                 metrics: { points: 7.33 },
-                cleanup: { status: "passed", note: "个人 Skill 存量基线完整无损" },
+                cleanup: { status: "passed", note: "存量基线完整无损" },
                 steps: [
-                  { name: "Step 0：负向 4102/4104", status: "passed", expected: "4102 与 4104 拦截", actual: "精准命中", evidence: "API JSON" },
-                  { name: "Step 1–4：全生命周期与自清理", status: "passed", expected: "创建/加载/覆盖/启停删除通过", actual: "全部通过", evidence: "Langfuse + Web API" }
+                  { name: "前置与隔离核验", status: "passed", expected: "权限与校验拦截命中", actual: "符合预期", evidence: "API JSON" },
+                  { name: "主链路与自清理闭环", status: "passed", expected: "执行与删除复核通过", actual: "全部通过", evidence: "Langfuse + Web API" }
                 ]
               }
             ],
             notes: {
               facts: ["单用例专项模式下自动置顶并默认展开当前唯一执行用例，本次执行通过率按 1/1 = 100% 计算。"],
               inferences: [],
-              gaps: ["其余 9 项用例本次未执行。"],
+              gaps: [`其余 ${Math.max(0, catCases.length - 1)} 项用例本次未执行。`],
               calibrations: []
             }
           };
@@ -3332,9 +3498,9 @@
             schemaVersion: "kb-suite-001-report.v1",
             isPlaceholderDemo: true,
             meta: {
-              suiteId: "KB-SUITE-001",
+              suiteId: BASE_CATALOG.suiteId || "KB-SUITE-001",
               taskId: "无（全量回归演示）",
-              runId: "DEMO-FULL-10-CASES",
+              runId: `DEMO-FULL-${catCases.length}-CASES`,
               env: "preprod",
               langfuseEnv: "prd",
               startedAt: "2026-11-26 08:30:00 +08:00",
@@ -3344,7 +3510,7 @@
               modelSummary: "kimi-k2.8-preview",
               pointsConsumed: 158.2,
               cleanupStatus: "passed",
-              cleanupNote: "全量 10 个用例无残留"
+              cleanupNote: `全量 ${catCases.length} 个用例无残留`
             },
             envConfig: {
               source: "全量演示环境配置",
@@ -3355,7 +3521,7 @@
               compactionThreshold: "400,000 tokens · trigger-messages=0",
               toolLimits: "read_file ≤ 64,000 字符 · K8s 沙箱（180s 超时）"
             },
-            cases: SUITE_CASES.map((c, idx) => ({
+            cases: catCases.map((c, idx) => ({
               id: c.id,
               status: "passed",
               summary: `全量演示：${c.title}全部检查点通过。`,
@@ -3367,12 +3533,12 @@
             })),
             aiSummary: {
               source: "全量演示摘要",
-              headline: "全量 10/10 用例（23/23 能力标签）全部通过，六大核心能力域无短板。",
+              headline: `全量 ${catCases.length}/${catCases.length} 用例（${catTagCount}/${catTagCount} 能力标签）全部通过，${catDomains.length} 大核心能力域无短板。`,
               sections: [
                 {
                   title: "核心结论",
                   items: [
-                    "对话缓存、上下文压缩、长期记忆、MCP/Skill、定时任务与 AI 生图全部通过。"
+                    "全部已定义能力域与用例检查点均通过。"
                   ]
                 },
                 {
@@ -3382,24 +3548,38 @@
                   ]
                 }
               ],
-              recommendation: "全量 10/10 用例通过，满足当前版本回归放行标准。"
+              recommendation: `全量 ${catCases.length}/${catCases.length} 用例通过，满足当前版本回归放行标准。`
             },
             notes: {
-              facts: ["全量 10/10 用例（23/23 能力标签）全部覆盖通过。"],
+              facts: [`全量 ${catCases.length}/${catCases.length} 用例（${catTagCount}/${catTagCount} 能力标签）全部覆盖通过。`],
               inferences: [],
               gaps: [],
               calibrations: []
             }
           };
         }
-        // Mixed 4-state sample
+        // Mixed 4-state sample dynamically selected from current catalog
+        const preferred = ["CASE-05", "CASE-06", "CASE-09", "CASE-10"].map((id) => catCases.find((c) => c.id === id)).filter(Boolean);
+        const picks = preferred.length === 4 ? preferred : catCases.slice(0, Math.min(4, catCases.length));
+        const statuses = ["failed", "blocked", "passed", "passed"];
+        const demoCases = picks.map((c, i) => ({
+          id: c.id,
+          status: statuses[i] || "passed",
+          summary: `局部演示（${statuses[i] || "passed"}）：${c.title}。`,
+          durationMs: 41000 + i * 12000,
+          threadIds: [`thread_demo_${c.id.toLowerCase()}`],
+          runIds: [`run_demo_${c.id.toLowerCase()}`],
+          metrics: { points: i === picks.length - 1 ? 125.45 : Number((3.1 + i * 1.5).toFixed(2)) },
+          cleanup: { status: "passed", note: "临时测试资产已清理" }
+        }));
+        const remainCount = Math.max(0, catCases.length - demoCases.length);
         return {
           schemaVersion: "kb-suite-001-report.v1",
           isPlaceholderDemo: true,
           meta: {
-            suiteId: "KB-SUITE-001",
+            suiteId: BASE_CATALOG.suiteId || "KB-SUITE-001",
             taskId: "无（局部四态演示）",
-            runId: "DEMO-MIXED-4-OF-10",
+            runId: `DEMO-MIXED-${demoCases.length}-OF-${catCases.length}`,
             env: "test",
             langfuseEnv: "test",
             startedAt: "2026-11-26 09:05:00 +08:00",
@@ -3420,78 +3600,12 @@
             compactionThreshold: "240,000 tokens · trigger-messages=0",
             toolLimits: "read_file ≤ 64,000 字符 · 沙箱开启"
           },
-          cases: [
-            {
-              id: "CASE-05",
-              status: "failed",
-              summary: "示例失败：Step 4 停用后会话 B 仍出现 1 次越权工具调用（演示失败高亮置顶）。",
-              durationMs: 41000,
-              threadIds: ["thread_demo_05"],
-              runIds: ["run_demo_05_fail"],
-              metrics: { points: 3.1 },
-              cleanup: { status: "passed", note: "finally 已删除临时 MCP" },
-              steps: [
-                { name: "Step 0–3：准入与授权调用", status: "passed", expected: "8004 + SELECTED", actual: "通过", evidence: "API + Langfuse" },
-                { name: "Step 4：停用即时隔离", status: "failed", expected: "工具调用为 0 次", actual: "实测命中 1 次（演示失败）", evidence: "Langfuse tool span" }
-              ]
-            },
-            {
-              id: "CASE-06",
-              status: "blocked",
-              summary: "示例阻塞：测试环境 XXL-JOB 执行器离线，等待 Cron 触发超时（标记为阻塞而非失败）。",
-              durationMs: 65000,
-              threadIds: ["thread_demo_06"],
-              runIds: ["run_demo_06_blk"],
-              metrics: { points: 2.65 },
-              cleanup: { status: "passed", note: "finally 已删除定时任务" }
-            },
-            {
-              id: "CASE-09",
-              status: "passed",
-              summary: "个人 Skill 负向 4102/4104、隔离报错、跨会话 _import 加载、覆盖 V2 与启停删除均通过。",
-              durationMs: 56000,
-              threadIds: ["thread_demo_09a", "thread_demo_09b"],
-              runIds: ["run_demo_09_1", "run_demo_09_2", "run_demo_09_3"],
-              metrics: { points: 7.33 },
-              cleanup: { status: "passed", note: "已删测试 Skill 且存量完好" }
-            },
-            {
-              id: "CASE-10",
-              status: "passed",
-              summary: "文生图、链式图生图与 list_attachments 均通过，免调 save_image_to_library 且删后 COS 404。",
-              durationMs: 77000,
-              threadIds: ["thread_demo_10"],
-              runIds: ["run_demo_10_1", "run_demo_10_2"],
-              metrics: { points: 125.45 },
-              cleanup: { status: "passed", note: "文件库为空，原链接返回 404" }
-            }
-          ],
-          aiSummary: {
-            source: "局部四态演示",
-            headline: "局部 4/10 用例：通过 2、失败 1（CASE-05）、阻塞 1（CASE-06），通过率 50%。",
-            sections: [
-              {
-                title: "核心结论",
-                items: [
-                  "【失败】CASE-05：MCP 连接器停用后仍出现 1 次越权调用。",
-                  "【阻塞】CASE-06：定时执行器离线超时，属环境阻塞非功能缺陷。",
-                  "【通过】CASE-09（个人Skill）与 CASE-10（AI生图）全通过。"
-                ]
-              },
-              {
-                title: "效能与资源",
-                items: [
-                  "总耗时 3m 4s，净耗 131.2 积分；全部临时测试资产已清理无残留。"
-                ]
-              }
-            ],
-            recommendation: "建议优先修复 CASE-05 停用缓存隔离失效并解除 CASE-06 阻塞后复测。"
-          },
+          cases: demoCases,
           notes: {
-            facts: ["局部执行 4/10 用例（通过 2、失败 1、阻塞 1），其余 6 项未执行。"],
-            inferences: ["仅在异常排查演示中出现停用隔离失败与调度器离线。"],
-            gaps: ["CASE-01/02/03/04/07/08 本轮未执行。"],
-            calibrations: ["通过率按 2/4 = 50% 计算，雷达图同步区分已测域与未测域。"]
+            facts: [`局部执行 ${demoCases.length}/${catCases.length} 用例，其余 ${remainCount} 项未执行。`],
+            inferences: ["局部四态演示模式，自动区分已测域健康度与未测域缺口。"],
+            gaps: [`未执行 ${remainCount} 项用例不计入本次失败。`],
+            calibrations: ["支持通过测试集 Markdown 自动扩展用例规模。"]
           }
         };
       }
